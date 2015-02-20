@@ -57,23 +57,16 @@ public class Capturer : MonoBehaviour
 			AIBehavior aiBehavior = coll.gameObject.GetComponent<AIBehavior>();
 			if (aiBehavior)
 			{
-				PlayerController player = PlayerController.instance;
-				if (player.canCapture && !player.isPulling)
-				{
-					aiBehavior.RunFromCapture();
-					player.objCaptured = coll.gameObject;
-					player.StartPull();
-				}
+				PlayerController.instance.objCaptured = coll.gameObject;
 			}
 		}
 	}
 
 	void OnTriggerExit2D(Collider2D coll)
 	{
-		// if (PlayerController.instance.objCaptured == coll.gameObject)
-		// {
-		// 	PlayerController.instance.EndPull();
-		// 		Debug.Log("ending");
-		// }
+		if (!PlayerController.instance.isPulling)
+		{
+			PlayerController.instance.objCaptured = null;
+		}
 	}
 }

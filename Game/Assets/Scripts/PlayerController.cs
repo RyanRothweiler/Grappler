@@ -45,25 +45,39 @@ public class PlayerController : MonoBehaviour
 	public float currentPullStrength;
 	public GameObject pullStrengthBar;
 
+	public bool useController;
+
+	public bool mouseMove;
+
 	void Start () 
 	{
 		instance = this;
+		useController = false;
 	}
 	
 	void Update () 
 	{
+		if (Input.GetMouseButtonDown(0))
+		{
+			useController = false;
+		}
+		if (Input.GetAxis("Horizontal") > 0 || Input.GetAxis("Vertical") > 0)
+		{
+			useController = true;
+		}
+
 		currentPullStrength = Mathf.Clamp(currentPullStrength, 0, 100);
 		Vector3 newPullBarScale = new Vector3(currentPullStrength / totalPullStrength, 1, 1);
 		pullStrengthBar.transform.localScale = newPullBarScale;
 
-		if (isPulling)
-		{
-			currentPullStrength -= 0.5f;
-		}
-		else
-		{
-			currentPullStrength += 1;
-		}
+		// if (isPulling)
+		// {
+		// 	currentPullStrength -= 0.5f;
+		// }
+		// else
+		// {
+		// 	currentPullStrength += 1;
+		// }
 
 
 		if (currentPullStrength <= 0)
@@ -74,67 +88,113 @@ public class PlayerController : MonoBehaviour
 
 		if (!isStunned && isAlive)
 		{
-			if (Input.GetButton("ControllerShooting"))
+			if (useController)
 			{
-				canCapture = true;
-				Capturer.instance.Show();
-			}
-			else
-			{
+				if (Input.GetButton("ControllerShooting"))
+				{
+					if (objCaptured != null && !isPulling)
+					{
+						objCaptured.GetComponent<AIBehavior>().RunFromCapture();
+						StartPull();
+					}
+				}
+				else
+				{
+					if (isPulling)
+					{
+						KillPull();
+					}
+				}
+
 				if (isPulling)
 				{
-					KillPull();
+					currentMoveModifier = 0.4f;
+					currentTurnModifier = 1.5f;
+
+					if (!checkingTripping)
+					{
+						CheckTrip();
+					}
 				}
-
-				canCapture = false;
-				Capturer.instance.Hide();
-			}
-
-			if (isPulling)
-			{
-				currentMoveModifier = 0.4f;
-				currentTurnModifier = 1.5f;
-
-				if (!checkingTripping)
+				else
 				{
-					CheckTrip();
+					currentMoveModifier = 1;
+					currentTurnModifier = 1;
 				}
-			}
-			else
-			{
-				currentMoveModifier = 1;
-				currentTurnModifier = 1;
-			}
 
-			float horizontalChange = Input.GetAxis("Horizontal") * Time.deltaTime * currentMoveModifier * 10;
-			float verticalChange = Input.GetAxis("Vertical") * Time.deltaTime * currentMoveModifier * 10;
-			Vector3 newPos = new Vector3(this.transform.position.x + horizontalChange, 
-			                             this.transform.position.y + verticalChange, 
-			                             0);
-			this.transform.position = newPos;
+				if (objCaptured != null && !isPulling)
+				{
+					if (Vector3.Distance(objCaptured.transform.position, this.transform.position) > 2.3)
+					{
+						objCaptured = null;
+					}
+				}
 
-			Vector3 capturingDirection = new Vector3(Input.GetAxis("ControllerRightVertical"), 
-			                                         Input.GetAxis("ControllerRightHorizontal"),
-			                                         0);
-			capturingDirection.Normalize();
+				float horizontalChange = Input.GetAxis("Horizontal") * Time.deltaTime * currentMoveModifier * 10;
+				float verticalChange = Input.GetAxis("Vertical") * Time.deltaTime * currentMoveModifier * 10;
+				Vector3 newPos = new Vector3(this.transform.position.x + horizontalChange, 
+				                             this.transform.position.y + verticalChange, 
+				                             0);
+				this.transform.position = newPos;
 
-			if (capturingDirection.x > 0.5f || capturingDirection.x < -0.5f || 
-			    capturingDirection.y > 0.5f || capturingDirection.y < -0.5f)
-			{
-				controllerAimingOffset.y -= Input.GetAxis("ControllerRightVertical") * 1.5f;
-				controllerAimingOffset.x += Input.GetAxis("ControllerRightHorizontal") * 1.5f;
-				controllerAimingOffset.Normalize();
-				controllerAimingOffset *= 8 * currentTurnModifier;
+				Vector3 capturingDirection = new Vector3(Input.GetAxis("ControllerRightVertical"), 
+				                                         Input.GetAxis("ControllerRightHorizontal"),
+				                                         0);
 
-				aimingWorldPos = this.transform.position + controllerAimingOffset;
-				PointAt(this.gameObject, aimingWorldPos);
-			}
-			else
-			{
 				Vector3 movingDirection = new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"), 0);
 				movingDirection.Normalize();
 				movingDirection = (movingDirection * 15) + this.transform.position;
 				PointAt(this.gameObject, movingDirection);
+			}
+			else
+			{
+				if (Input.GetMouseButton(1))
+				{
+					if (objCaptured != null && !isPulling)
+					{
+						objCaptured.GetComponent<AIBehavior>().RunFromCapture();
+						StartPull();
+					}
+				}
+				else
+				{
+					if (isPulling)
+					{
+						KillPull();
+					}
+				}
+
+				if (isPulling)
+				{
+					currentMoveModifier = 0.4f;
+					currentTurnModifier = 1.5f;
+
+					if (!checkingTripping)
+					{
+						CheckTrip();
+					}
+				}
+				else
+				{
+					currentMoveModifier = 1;
+					currentTurnModifier = 1;
+				}
+
+				if (Input.GetMouseButtonDown(0))
+				{
+					mouseMove = true;
+				}
+				if (Input.GetMouseButtonUp(0))
+				{
+					mouseMove = false;
+				}
+
+				if (mouseMove)
+				{
+					Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+					PointAt(this.gameObject, mouseWorldPos);
+					this.transform.position += this.transform.up * 0.2f * currentMoveModifier;
+				}
 			}
 		}
 
@@ -224,11 +284,14 @@ public class PlayerController : MonoBehaviour
 
 	public void KillPull()
 	{
-		objCaptured.GetComponent<RunningBehavior>().KillPull();
+		objCaptured.GetComponent<AIBehavior>().KillPull();
 		this.pullJoint.enabled = false;
 		pullLine.enabled = false;
 		isPulling = false;
 		killPull = true;
+
+		this.GetComponent<Rigidbody2D>().isKinematic = true;
+		this.GetComponent<Rigidbody2D>().isKinematic = false;
 	}
 
 	public void PointAt(GameObject objPointing, Vector3 target)
