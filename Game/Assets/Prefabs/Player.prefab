@@ -39,9 +39,9 @@ GameObject:
   serializedVersion: 4
   m_Component:
   - 4: {fileID: 418582}
-  - 114: {fileID: 11418586}
   - 58: {fileID: 5818588}
   - 212: {fileID: 21218586}
+  - 114: {fileID: 11478604}
   m_Layer: 0
   m_Name: Capturer
   m_TagString: Untagged
@@ -217,17 +217,6 @@ PolygonCollider2D:
     - - {x: .0410168171, y: 1.37940431}
       - {x: .68444699, y: -1.50597107}
       - {x: -.571650565, y: -1.47520816}
---- !u!114 &11418586
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 118582}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 175edf5270807d743800c66a339514f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &11418588
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -239,7 +228,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b84df24769b59a449604d4526bb5f71, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  capturer: {fileID: 0}
   cameraFocalPoint: {fileID: 118580}
   canCapture: 0
   objCaptured: {fileID: 0}
@@ -263,6 +251,17 @@ MonoBehaviour:
   pullStrengthBar: {fileID: 0}
   useController: 0
   mouseMove: 0
+--- !u!114 &11478604
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 118582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 175edf5270807d743800c66a339514f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!120 &12018588
 LineRenderer:
   m_ObjectHideFlags: 1

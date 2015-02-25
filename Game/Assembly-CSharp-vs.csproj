@@ -46,21 +46,18 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Scripts\AI Behavior\AIBehavior.cs" />
-     <Compile Include="Assets\Scripts\AI Behavior\AvoidingBehavior.cs" />
-     <Compile Include="Assets\Scripts\AI Behavior\Chaser.cs" />
-     <Compile Include="Assets\Scripts\AI Behavior\RunningBehavior.cs" />
-     <Compile Include="Assets\Scripts\Aimer.cs" />
-     <Compile Include="Assets\Scripts\CameraController.cs" />
-     <Compile Include="Assets\Scripts\CanBeCaptured.cs" />
-     <Compile Include="Assets\Scripts\CaptureHolder.cs" />
-     <Compile Include="Assets\Scripts\Capturer.cs" />
      <Compile Include="Assets\Scripts\DeathTimer.cs" />
-     <Compile Include="Assets\Scripts\Enemy.cs" />
-     <Compile Include="Assets\Scripts\LittleDudeController.cs" />
-     <Compile Include="Assets\Scripts\PlayerController.cs" />
-     <Compile Include="Assets\Scripts\WorldGenerator.cs" />
-     <Compile Include="Assets\Scripts\WorldPieceController.cs" />
+     <Compile Include="Assets\Scripts\Enemy\Avoider.cs" />
+     <Compile Include="Assets\Scripts\Enemy\Chaser.cs" />
+     <Compile Include="Assets\Scripts\Enemy\EnemyController.cs" />
+     <Compile Include="Assets\Scripts\Enemy\Healer.cs" />
+     <Compile Include="Assets\Scripts\Player\CameraController.cs" />
+     <Compile Include="Assets\Scripts\Player\CaptureController.cs" />
+     <Compile Include="Assets\Scripts\Player\PlayerController.cs" />
+     <Compile Include="Assets\Scripts\Utility.cs" />
+     <Compile Include="Assets\Scripts\World Generation\SocketController.cs" />
+     <Compile Include="Assets\Scripts\World Generation\WorldGenerator.cs" />
+     <Compile Include="Assets\Scripts\World Generation\WorldPieceController.cs" />
      <None Include="Assets\Scripts\HOTween\HOTween_License.txt" />
  <Reference Include="UnityEngine.UI">
  <HintPath>C:/Program Files (x86)/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/4.6.2/UnityEngine.UI.dll</HintPath>

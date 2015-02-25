@@ -10,10 +10,10 @@ public class WorldGeneratorEditor : Editor
 
 		DrawDefaultInspector();
 
-		if (GUILayout.Button("Generate World"))
-		{
-			WorldGenerator worldGenerator = (WorldGenerator)target;
-			worldGenerator.GenerateWorld();
-		}
+		// if (GUILayout.Button("Generate World"))
+		// {
+		// 	WorldGenerator worldGenerator = (WorldGenerator)target;
+		// 	worldGenerator.GenerateWorld();
+		// }
 	}
 }
