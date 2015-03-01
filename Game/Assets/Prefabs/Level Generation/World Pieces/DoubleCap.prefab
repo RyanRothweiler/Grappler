@@ -9,7 +9,8 @@ GameObject:
   m_Component:
   - 4: {fileID: 483682}
   - 212: {fileID: 21283682}
-  m_Layer: 0
+  - 61: {fileID: 6107388}
+  m_Layer: 14
   m_Name: DoubleCap
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -23,11 +24,22 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 183682}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -48.4300003, y: 18.2000008, z: 0}
-  m_LocalScale: {x: 1, y: 7.64999866, z: 1}
+  m_LocalPosition: {x: -33.5589981, y: 51.132, z: .0634000003}
+  m_LocalScale: {x: .809972167, y: 6.19628572, z: .809972167}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
+--- !u!61 &6107388
+BoxCollider2D:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 183682}
+  m_Enabled: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Size: {x: 2.55999994, y: 2.55999994}
+  m_Center: {x: 0, y: 0}
 --- !u!212 &21283682
 SpriteRenderer:
   m_ObjectHideFlags: 1

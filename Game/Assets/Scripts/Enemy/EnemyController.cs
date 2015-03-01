@@ -14,6 +14,8 @@ public class EnemyController : MonoBehaviour
 
 	public float movementSpeed;
 
+	public int generatorSpawnSpeed;
+
 	public List<GameObject> objectsAttached;
 
 	void Start () 
@@ -23,7 +25,7 @@ public class EnemyController : MonoBehaviour
 	
 	void Update () 
 	{
-		currentHealth = Mathf.Clamp(currentHealth, -10, 100);
+		currentHealth = Mathf.Clamp(currentHealth, -10, maxHealth);
 		Vector3 newScale = new Vector3(currentHealth / maxHealth, 1, 1);
 		healthBar.transform.localScale = newScale;
 

@@ -5,6 +5,7 @@ public class WorldPieceController : MonoBehaviour
 {
 
 	public GameObject[] socketObjects;
+	public GameObject[] enemySockets;
 	public bool collided = false;
 
 	void OnTriggerEnter2D(Collider2D coll)

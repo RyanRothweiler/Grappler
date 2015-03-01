@@ -45,6 +45,7 @@ ModelImporter:
     100078: //RootNode
     100080: Bone
     100082: Bone_025
+    100084: SomethingElse
     400000: Armature
     400002: Bone_001
     400004: Bone_002
@@ -87,12 +88,14 @@ ModelImporter:
     400078: //RootNode
     400080: Bone
     400082: Bone_025
+    400084: SomethingElse
     2300000: Circle
     3300000: Circle
     4300000: Circle
-    7400000: Default Take
+    7400000: RadialBarAnim
     7400002: ArmatureAction
     9500000: //RootNode
+    11100000: //RootNode
     13700000: Circle
   materials:
     importMaterials: 1
@@ -109,7 +112,103 @@ ModelImporter:
     animationScaleError: .5
     animationWrapMode: 0
     extraExposedTransformPaths: []
-    clipAnimations: []
+    clipAnimations:
+    - serializedVersion: 16
+      name: RadialBarAnim
+      takeName: Default Take
+      firstFrame: -1
+      lastFrame: 159
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask:
+      - path: 
+        weight: 1
+      - path: Armature
+        weight: 1
+      - path: Armature/Bone
+        weight: 1
+      - path: Armature/Bone_001
+        weight: 1
+      - path: Armature/Bone_002
+        weight: 1
+      - path: Armature/Bone_003
+        weight: 1
+      - path: Armature/Bone_004
+        weight: 1
+      - path: Armature/Bone_005
+        weight: 1
+      - path: Armature/Bone_006
+        weight: 1
+      - path: Armature/Bone_007
+        weight: 1
+      - path: Armature/Bone_008
+        weight: 1
+      - path: Armature/Bone_009
+        weight: 1
+      - path: Armature/Bone_010
+        weight: 1
+      - path: Armature/Bone_011
+        weight: 1
+      - path: Armature/Bone_012
+        weight: 1
+      - path: Armature/Bone_013
+        weight: 1
+      - path: Armature/Bone_014
+        weight: 1
+      - path: Armature/Bone_015
+        weight: 1
+      - path: Armature/Bone_016
+        weight: 1
+      - path: Armature/Bone_017
+        weight: 1
+      - path: Armature/Bone_018
+        weight: 1
+      - path: Armature/Bone_019
+        weight: 1
+      - path: Armature/Bone_020
+        weight: 1
+      - path: Armature/Bone_021
+        weight: 1
+      - path: Armature/Bone_022
+        weight: 1
+      - path: Armature/Bone_023
+        weight: 1
+      - path: Armature/Bone_024
+        weight: 1
+      - path: Armature/Bone_025
+        weight: 1
+      - path: Armature/Bone_026
+        weight: 1
+      - path: Armature/Bone_027
+        weight: 1
+      - path: Armature/Bone_028
+        weight: 1
+      - path: Armature/Bone_029
+        weight: 1
+      - path: Armature/Bone_030
+        weight: 1
+      - path: Armature/Bone_031
+        weight: 1
+      - path: Circle
+        weight: 1
+      maskType: 0
+      maskSource: {instanceID: 0}
     isReadable: 1
   meshes:
     lODScreenPercentages: []
@@ -145,6 +244,6 @@ ModelImporter:
     feetSpacing: 0
     rootMotionBoneName: 
   lastHumanDescriptionAvatarSource: {instanceID: 0}
-  animationType: 2
+  animationType: 1
   additionalBone: 0
   userData: 

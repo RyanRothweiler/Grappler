@@ -13,13 +13,13 @@ SceneSettings:
 --- !u!104 &2
 RenderSettings:
   m_Fog: 0
-  m_FogColor: {r: .5, g: .5, b: .5, a: 1}
+  m_FogColor: {r: 0, g: 0, b: .0862745121, a: 0}
   m_FogMode: 3
   m_FogDensity: .00999999978
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
   m_AmbientLight: {r: 1, g: 1, b: 1, a: 1}
-  m_SkyboxMaterial: {fileID: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 0c343c1b00b2c8745ac8f067344b7d46, type: 2}
   m_HaloStrength: .5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -73,6 +73,7 @@ NavMeshSettings:
     minRegionArea: 2
     widthInaccuracy: 16.666666
     heightInaccuracy: 10
+    tileSizeHint: 0
   m_NavMesh: {fileID: 19400000, guid: 80e78113c74e73a4da71528d8dff3cf2, type: 2}
 --- !u!1 &8769762
 GameObject:
@@ -574,7 +575,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4831f014544635342ad0cead037c92c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pieceLibrary:
+  worldPieceLibrary:
   - {fileID: 106880, guid: a6f19c5f7a0df6d4e978ba2efc17a31d, type: 2}
   - {fileID: 131346, guid: 7301a65071df4a14b957097cdfdfcdfe, type: 2}
   - {fileID: 196780, guid: b1e21730d2733e84cb36302ef035061b, type: 2}
@@ -587,6 +588,17 @@ MonoBehaviour:
   - {fileID: 161118, guid: a5af7780af16e0948827155810622cd4, type: 2}
   - {fileID: 117046, guid: 4a7b04e654ec7c4439e7afa3c7594d12, type: 2}
   - {fileID: 108522, guid: fff721e6ad89c6d4787678c3cfa0784d, type: 2}
+  enemyPieceLibrary:
+  - {fileID: 151422, guid: 1ef531fb02cb388428d92d68ed0ca65a, type: 2}
+  - {fileID: 187836, guid: d354c6cd4a159214da4897b096745d08, type: 2}
+  - {fileID: 156466, guid: a54c1ea0358d14542a7209b3cf752bb0, type: 2}
+  - {fileID: 128934, guid: 850133cb8a9cc694ea19fd094f3bb23f, type: 2}
+  - {fileID: 156364, guid: a45306842561b3b4cb83c0e07ead0ede, type: 2}
+  - {fileID: 102808, guid: d30f7541a86e4cd4fa96e329df3b4528, type: 2}
+  - {fileID: 150788, guid: baf895210d6e143419572dff9f56c91e, type: 2}
+  - {fileID: 159264, guid: 767e599c79e17394a865bc4a7b84fea7, type: 2}
+  - {fileID: 190618, guid: e8e91b9c3e63d14409a0358d72f6997e, type: 2}
+  - {fileID: 186424, guid: 57c5579365d95a542a341c7dc7595520, type: 2}
   singleEnd: {fileID: 113836, guid: 832f4cf466061be4a8770bde485fbdc6, type: 2}
   doubleEnd: {fileID: 183682, guid: 7f7788d2471f0df49b645a79c3a1893f, type: 2}
 --- !u!4 &693097826

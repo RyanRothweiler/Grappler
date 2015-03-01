@@ -6,7 +6,8 @@ public class WorldGenerator : MonoBehaviour
 {
 	public static WorldGenerator instance;
 
-	public GameObject[] pieceLibrary;
+	public GameObject[] worldPieceLibrary;
+	public GameObject[] enemyPieceLibrary;
 	public GameObject singleEnd;
 	public GameObject doubleEnd;
 
@@ -32,10 +33,10 @@ public class WorldGenerator : MonoBehaviour
 		bool looking = true;
 		while (looking)
 		{
-			int randIndex = Random.Range(0, pieceLibrary.Length - 1);
-			if (pieceLibrary[randIndex] != null && !pieceLibrary[randIndex].activeInHierarchy)
+			int randIndex = Random.Range(0, worldPieceLibrary.Length - 1);
+			if (worldPieceLibrary[randIndex] != null && !worldPieceLibrary[randIndex].activeInHierarchy)
 			{
-				GameObject newPiece = GameObject.Instantiate(pieceLibrary[randIndex].gameObject, 
+				GameObject newPiece = GameObject.Instantiate(worldPieceLibrary[randIndex].gameObject, 
 				                                             new Vector3(0, 0, 0), Quaternion.identity) as GameObject;
 				looking = false;
 				return (newPiece);
@@ -51,7 +52,9 @@ public class WorldGenerator : MonoBehaviour
 	}
 	public IEnumerator GenerateWorld_()
 	{
+		List<WorldPieceController> allWorldPieces = new List<WorldPieceController>();
 		GameObject rootPiece = CreatePiece();
+		allWorldPieces.Add(rootPiece.GetComponent<WorldPieceController>());
 		rootPiece.transform.Rotate(new Vector3(0, 0, Random.Range(0, 360)));
 
 		List<slot> openSlots = new List<slot>();
@@ -66,7 +69,7 @@ public class WorldGenerator : MonoBehaviour
 		}
 
 
-		int levelSize = 20;
+		int levelSize = 10;
 		for (int pieceNum = 1;
 		     pieceNum < levelSize;
 		     pieceNum++)
@@ -111,6 +114,8 @@ public class WorldGenerator : MonoBehaviour
 				yield return new WaitForSeconds(0.03f);
 				if (!newPieceCont.collided)
 				{
+					allWorldPieces.Add(newPieceCont);
+
 					slotFilling.slotObject.GetComponent<SocketController>().isTaken = true;
 					slotUsing.GetComponent<SocketController>().isTaken = true;
 					looking = false;
@@ -152,6 +157,33 @@ public class WorldGenerator : MonoBehaviour
 					                                           Quaternion.identity) as GameObject;
 					newObj.transform.rotation = slotChecking.slotObject.transform.rotation;
 					newObj.transform.Rotate(0, 0, 90);
+				}
+			}
+		}
+
+
+		List<Vector3> openEnemyPositions = new List<Vector3>();
+		for (int pieceIndex = 0;
+		     pieceIndex < allWorldPieces.Count;
+		     pieceIndex++)
+		{
+			for (int enemyIndex = 0;
+			     enemyIndex < allWorldPieces[pieceIndex].enemySockets.Length;
+			     enemyIndex++)
+			{
+				openEnemyPositions.Add(allWorldPieces[pieceIndex].enemySockets[enemyIndex].transform.position);
+			}
+		}
+
+		foreach(Vector3 enemyPosition in openEnemyPositions)
+		{
+			if (Vector3.Distance(enemyPosition, PlayerController.instance.transform.position) > 5)
+			{
+				int fill = Random.Range(0, 100);
+				if (fill < 80)
+				{
+					int pieceIndex = Random.Range(0, enemyPieceLibrary.Length);
+					GameObject.Instantiate(enemyPieceLibrary[pieceIndex], enemyPosition, Quaternion.identity);
 				}
 			}
 		}

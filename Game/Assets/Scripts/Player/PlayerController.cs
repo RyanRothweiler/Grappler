@@ -52,7 +52,7 @@ public class PlayerController : MonoBehaviour
 		instance = this;
 		useController = false;
 	}
-	
+
 	void Update () 
 	{
 		if (Input.GetMouseButtonDown(0))
@@ -252,14 +252,25 @@ public class PlayerController : MonoBehaviour
 
 	void OnCollisionEnter2D(Collision2D coll)
 	{
-		if (coll.gameObject.GetComponent<EnemyController>() && canBeDamaged && isAlive)
+		if ((coll.gameObject.GetComponent<EnemyController>() && canBeDamaged && isAlive) || 
+		    (coll.gameObject.GetComponent<BulletController>()))
 		{
-			Instantiate(deathParticleSystem, this.transform.position, Quaternion.identity);
-			heartContainers[currentHealth - 1].SetActive(false);
-			currentHealth--;
-			canBeDamaged = false;
-			ResetCanBeDamaged();
+			TakeDamage();
 		}
+
+		if (coll.gameObject.GetComponent<BulletController>())
+		{
+			Destroy(coll.gameObject);
+		}
+	}
+
+	public void TakeDamage()
+	{
+		Instantiate(deathParticleSystem, this.transform.position, Quaternion.identity);
+		heartContainers[currentHealth - 1].SetActive(false);
+		currentHealth--;
+		canBeDamaged = false;
+		ResetCanBeDamaged();
 	}
 
 	public void ResetCanBeDamaged()

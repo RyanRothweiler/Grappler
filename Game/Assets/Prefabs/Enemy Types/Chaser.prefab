@@ -9,7 +9,7 @@ GameObject:
   m_Component:
   - 4: {fileID: 450784}
   - 212: {fileID: 21250786}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: BarSprite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -25,7 +25,7 @@ GameObject:
   m_Component:
   - 4: {fileID: 450788}
   - 212: {fileID: 21250788}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: HealthTotal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -40,7 +40,7 @@ GameObject:
   serializedVersion: 4
   m_Component:
   - 4: {fileID: 450786}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: HealthCurrent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -60,7 +60,7 @@ GameObject:
   - 50: {fileID: 5050788}
   - 114: {fileID: 11450786}
   - 114: {fileID: 11450788}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: Chaser
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -161,6 +161,7 @@ MonoBehaviour:
   healthBar: {fileID: 150786}
   isRunning: 0
   movementSpeed: 11
+  generatorSpawnSpeed: 5
   objectsAttached: []
 --- !u!114 &11450788
 MonoBehaviour:
