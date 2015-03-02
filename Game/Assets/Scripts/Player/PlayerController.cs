@@ -31,6 +31,7 @@ public class PlayerController : MonoBehaviour
 
 	private int currentHealth = 3;
 	public GameObject[] heartContainers;
+	public GameObject heartFab;
 
 	private bool canBeDamaged = true;
 	private bool isAlive = true;
@@ -41,7 +42,6 @@ public class PlayerController : MonoBehaviour
 
 	public float totalPullStrength;
 	public float currentPullStrength;
-	public GameObject pullStrengthBar;
 
 	public bool useController;
 
@@ -64,9 +64,8 @@ public class PlayerController : MonoBehaviour
 			useController = true;
 		}
 
-		currentPullStrength = Mathf.Clamp(currentPullStrength, 0, 100);
-		Vector3 newPullBarScale = new Vector3(currentPullStrength / totalPullStrength, 1, 1);
-		pullStrengthBar.transform.localScale = newPullBarScale;
+		currentPullStrength = Mathf.Clamp(currentPullStrength, 0, 99);
+
 
 		if (isPulling)
 		{
@@ -261,6 +260,12 @@ public class PlayerController : MonoBehaviour
 		if (coll.gameObject.GetComponent<BulletController>())
 		{
 			Destroy(coll.gameObject);
+		}
+
+		if (coll.gameObject.GetComponent<HeartPickup>())
+		{
+			currentHealth++;
+			heartContainers[currentHealth].SetActive(true);
 		}
 	}
 

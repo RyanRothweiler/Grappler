@@ -117,7 +117,7 @@ ModelImporter:
       name: RadialBarAnim
       takeName: Default Take
       firstFrame: -1
-      lastFrame: 159
+      lastFrame: 99
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

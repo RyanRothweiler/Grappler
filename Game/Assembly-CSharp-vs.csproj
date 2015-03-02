@@ -60,9 +60,11 @@
      <Compile Include="Assets\Scripts\Enemy\Generator.cs" />
      <Compile Include="Assets\Scripts\Enemy\Healer.cs" />
      <Compile Include="Assets\Scripts\Enemy\Shooter.cs" />
+     <Compile Include="Assets\Scripts\HeartPickup.cs" />
      <Compile Include="Assets\Scripts\Player\CameraController.cs" />
      <Compile Include="Assets\Scripts\Player\CaptureController.cs" />
      <Compile Include="Assets\Scripts\Player\PlayerController.cs" />
+     <Compile Include="Assets\Scripts\Player\RadialBarController.cs" />
      <Compile Include="Assets\Scripts\Utility.cs" />
      <Compile Include="Assets\Scripts\World Generation\SocketController.cs" />
      <Compile Include="Assets\Scripts\World Generation\WorldGenerator.cs" />

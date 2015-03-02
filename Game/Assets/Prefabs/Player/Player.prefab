@@ -131,7 +131,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 118582}
   m_LocalRotation: {x: 0, y: 0, z: .707101941, w: .707111657}
-  m_LocalPosition: {x: .0599999987, y: 0, z: 0}
+  m_LocalPosition: {x: -.0900000036, y: .0199999996, z: 0}
   m_LocalScale: {x: 4.74256516, y: 4.74256611, z: 4.74256611}
   m_Children: []
   m_Father: {fileID: 418584}
@@ -244,11 +244,17 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  heartFab: {fileID: 0}
   deathParticleSystem: {fileID: 156704, guid: 8bfd0ae5bff5f2542822010972776a33, type: 2}
   pullLine: {fileID: 12018588}
   totalPullStrength: 100
   currentPullStrength: 100
-  pullStrengthBar: {fileID: 0}
   useController: 0
   mouseMove: 0
 --- !u!114 &11478604
@@ -338,7 +344,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 5a1e7213c9f387340b2a9f7e0ffcbb77, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: .145098045}
+  m_Color: {r: .65882355, g: .65882355, b: .65882355, a: .286274523}
 --- !u!212 &21218588
 SpriteRenderer:
   m_ObjectHideFlags: 1
