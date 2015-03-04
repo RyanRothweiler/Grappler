@@ -14,7 +14,7 @@ public class BulletController : MonoBehaviour
 	
 	void Update () 
 	{
-		Vector3 newPos = this.transform.position + (this.transform.up * speed * 0.35f);
+		Vector3 newPos = this.transform.position + (this.transform.up * speed * 0.28f);
 		newPos.z = 0;
 		this.transform.position = newPos;
 	}

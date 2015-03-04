@@ -73,7 +73,6 @@ NavMeshSettings:
     minRegionArea: 2
     widthInaccuracy: 16.666666
     heightInaccuracy: 10
-    tileSizeHint: 0
   m_NavMesh: {fileID: 0}
 --- !u!1 &5567044
 GameObject:
@@ -1812,6 +1811,7 @@ MonoBehaviour:
   - {fileID: 2061055864}
   - {fileID: 364647780}
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!50 &155380395
 Rigidbody2D:
   m_ObjectHideFlags: 0
@@ -5365,11 +5365,17 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  heartFab: {fileID: 0}
   deathParticleSystem: {fileID: 156704, guid: 8bfd0ae5bff5f2542822010972776a33, type: 2}
   pullLine: {fileID: 1900404146}
   totalPullStrength: 100
   currentPullStrength: 100
-  pullStrengthBar: {fileID: 0}
   useController: 0
   mouseMove: 0
 --- !u!1 &407115528
@@ -7015,6 +7021,7 @@ MonoBehaviour:
   enemySockets:
   - {fileID: 531365512}
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!60 &553942501
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -8165,7 +8172,7 @@ Transform:
   m_PrefabInternal: {fileID: 927121882}
   m_GameObject: {fileID: 670427516}
   m_LocalRotation: {x: 0, y: 0, z: .707101941, w: .707111657}
-  m_LocalPosition: {x: .0599999987, y: 0, z: 0}
+  m_LocalPosition: {x: -.0900000036, y: .0199999996, z: 0}
   m_LocalScale: {x: 4.74256516, y: 4.74256611, z: 4.74256611}
   m_Children: []
   m_Father: {fileID: 396935668}
@@ -8192,7 +8199,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 5a1e7213c9f387340b2a9f7e0ffcbb77, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: .145098045}
+  m_Color: {r: .65882355, g: .65882355, b: .65882355, a: .286274523}
 --- !u!58 &670427519
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -9206,6 +9213,7 @@ MonoBehaviour:
   - {fileID: 480592160}
   - {fileID: 29654702}
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!60 &754745964
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -11989,6 +11997,7 @@ MonoBehaviour:
   - {fileID: 1446394325}
   enemySockets: []
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!60 &991929154
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -13407,6 +13416,7 @@ MonoBehaviour:
   - {fileID: 36084450}
   - {fileID: 1192081722}
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!60 &1129767491
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -14000,6 +14010,7 @@ MonoBehaviour:
   enemySockets:
   - {fileID: 1065924383}
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!50 &1171531359
 Rigidbody2D:
   m_ObjectHideFlags: 0
@@ -15543,6 +15554,7 @@ MonoBehaviour:
   - {fileID: 1280305718}
   - {fileID: 667432477}
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!60 &1296222627
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -16015,6 +16027,7 @@ MonoBehaviour:
   - {fileID: 509580273}
   enemySockets: []
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!60 &1353710140
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -16844,6 +16857,7 @@ MonoBehaviour:
   - {fileID: 1509898749}
   - {fileID: 1914009524}
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!60 &1414653189
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -18270,6 +18284,7 @@ MonoBehaviour:
   enemySockets:
   - {fileID: 1814260182}
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!50 &1534454292
 Rigidbody2D:
   m_ObjectHideFlags: 0
@@ -23306,6 +23321,7 @@ MonoBehaviour:
   - {fileID: 893594933}
   - {fileID: 685344802}
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!50 &1970512650
 Rigidbody2D:
   m_ObjectHideFlags: 0
@@ -25387,6 +25403,7 @@ MonoBehaviour:
   - {fileID: 1289175694}
   - {fileID: 1931396212}
   collided: 0
+  miniMapPiece: {fileID: 0}
 --- !u!60 &2110154797
 PolygonCollider2D:
   m_ObjectHideFlags: 0

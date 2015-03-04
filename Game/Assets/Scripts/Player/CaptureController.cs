@@ -18,7 +18,19 @@ public class CaptureController : MonoBehaviour
 			EnemyController enemyController = coll.gameObject.GetComponent<EnemyController>();
 			if (enemyController)
 			{
-				PlayerController.instance.objCaptured = coll.gameObject;
+				if (PlayerController.instance.objCaptured == null)
+				{
+					PlayerController.instance.objCaptured = coll.gameObject;
+				}
+				else
+				{
+					float newCollDist = Vector3.Distance(PlayerController.instance.objCaptured.transform.position, PlayerController.instance.gameObject.transform.position);
+					float oldCollDist = Vector3.Distance(coll.gameObject.transform.position, PlayerController.instance.gameObject.transform.position);
+					if (newCollDist > oldCollDist)
+					{
+						PlayerController.instance.objCaptured = coll.gameObject;
+					}
+				}
 			}
 		}
 	}

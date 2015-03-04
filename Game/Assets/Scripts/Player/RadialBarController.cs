@@ -17,6 +17,5 @@ public class RadialBarController : MonoBehaviour
 		float currentAnimTime = animCoefficient * this.GetComponent<Animation>()["RadialBarAnim"].length;
 		this.GetComponent<Animation>()["RadialBarAnim"].time = currentAnimTime;
 		this.GetComponent<Animation>().Play("RadialBarAnim");
-		Debug.Log(currentAnimTime);
 	}
 }

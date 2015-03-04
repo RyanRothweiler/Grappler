@@ -264,8 +264,9 @@ public class PlayerController : MonoBehaviour
 
 		if (coll.gameObject.GetComponent<HeartPickup>())
 		{
-			currentHealth++;
+			Destroy(coll.gameObject);
 			heartContainers[currentHealth].SetActive(true);
+			currentHealth++;
 		}
 	}
 

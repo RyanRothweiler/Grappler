@@ -11,6 +11,8 @@ public class WorldGenerator : MonoBehaviour
 	public GameObject singleEnd;
 	public GameObject doubleEnd;
 
+	public GameObject miniMapCamera;
+
 	struct slot
 	{
 		public GameObject piece;
@@ -21,11 +23,6 @@ public class WorldGenerator : MonoBehaviour
 	{
 		instance = this;
 		GenerateWorld();
-	}
-	
-	void Update () 
-	{
-
 	}
 
 	public GameObject CreatePiece()
@@ -187,5 +184,30 @@ public class WorldGenerator : MonoBehaviour
 				}
 			}
 		}
+
+
+		Vector3 centerPos = new Vector3(0, 0, 0);
+		for (int pieceIndex = 0;
+		     pieceIndex < allWorldPieces.Count;
+		     pieceIndex++)
+		{
+			GameObject mapPiece = GameObject.Instantiate(allWorldPieces[pieceIndex].gameObject, 
+			                                             allWorldPieces[pieceIndex].gameObject.transform.position, 
+			                                             allWorldPieces[pieceIndex].gameObject.transform.rotation) as GameObject;
+			Vector3 newPos = new Vector3(mapPiece.transform.position.x + 2000, mapPiece.transform.position.y + 2000, mapPiece.transform.position.z + 2000);
+			mapPiece.transform.position = newPos;
+			allWorldPieces[pieceIndex].miniMapPiece = mapPiece;
+
+			if (centerPos.x == 0)
+			{
+				centerPos = newPos;
+			}
+			else
+			{
+				centerPos = (centerPos + newPos) / 2;
+			}
+		}
+		centerPos += new Vector3(0, 0, -250);
+		miniMapCamera.transform.position = centerPos;
 	}
 }
