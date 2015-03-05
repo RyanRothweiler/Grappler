@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using Holoville.HOTween;
 
 public class PlayerController : MonoBehaviour 
@@ -29,7 +30,7 @@ public class PlayerController : MonoBehaviour
 	public bool isStunned = false;
 	public GameObject stunner;
 
-	private int currentHealth = 3;
+	private static int currentHealth = 3;
 	public GameObject[] heartContainers;
 	public GameObject heartFab;
 
@@ -47,107 +48,170 @@ public class PlayerController : MonoBehaviour
 
 	public bool mouseMove;
 
+	public bool inItemSelect;
+
+	public List<Item> inventory = new List<Item>();
+
+	public ItemButton actionNorth;
+	public ItemButton actionEast;
+	public ItemButton actionSouth;
+	public ItemButton actionWest;
+
+
+	// public 
+
 	void Start () 
 	{
 		instance = this;
 		useController = false;
+
+		for (int index = 0;
+		     index < heartContainers.Length;
+		     index++)
+		{
+			heartContainers[index].SetActive(true);
+			if (index > currentHealth - 1)
+			{
+				heartContainers[index].SetActive(false);
+			}
+		}
 	}
 
 	void Update () 
 	{
-		if (Input.GetMouseButtonDown(0))
+		if (Input.GetButtonDown("Menu"))
 		{
-			useController = false;
-		}
-		if (Input.GetAxis("Horizontal") > 0 || Input.GetAxis("Vertical") > 0)
-		{
-			useController = true;
-		}
+			God.instance.isPaused = !God.instance.isPaused;
 
-		currentPullStrength = Mathf.Clamp(currentPullStrength, 0, 99);
-
-
-		if (isPulling)
-		{
-			currentPullStrength -= 0.5f;
-		}
-		else
-		{
-			currentPullStrength += 1;
-		}
-
-
-		if (currentPullStrength <= 0)
-		{
-			KillPull();
-			Stun();
-		}
-
-		if (!isStunned && isAlive)
-		{
-			if (useController)
+			if (ItemSelectionController.instance.inItemSelection)
 			{
-				if (Input.GetButton("ControllerShooting"))
+				ItemSelectionController.instance.CloseItemSelection();
+				ItemSelectionController.instance.inItemSelection = false;
+			}
+			else
+			{
+				ItemSelectionController.instance.OpenItemSelection();
+				ItemSelectionController.instance.inItemSelection = true;
+			}
+		}
+
+		if (ItemSelectionController.instance.inItemSelection)
+		{
+
+		}
+
+		if (!God.instance.isPaused)
+		{
+			if (Input.GetButtonDown("ActionNorth"))
+			{
+				actionNorth.Use();
+			}
+			if (Input.GetButtonDown("ActionEast"))
+			{
+				actionEast.Use();
+			}
+			if (Input.GetButtonDown("ActionSouth"))
+			{
+				actionSouth.Use();
+			}
+			if (Input.GetButtonDown("ActionWest"))
+			{
+				actionWest.Use();
+			}
+
+
+			if (Input.GetMouseButtonDown(0))
+			{
+				useController = false;
+			}
+			if (Input.GetAxis("Horizontal") > 0 || Input.GetAxis("Vertical") > 0)
+			{
+				useController = true;
+			}
+
+			currentPullStrength = Mathf.Clamp(currentPullStrength, 0, 99);
+
+			if (isPulling)
+			{
+				currentPullStrength -= 0.5f;
+			}
+			else
+			{
+				currentPullStrength += 1;
+			}
+
+			if (currentPullStrength <= 0)
+			{
+				KillPull();
+				Stun();
+			}
+
+			if (!isStunned && isAlive)
+			{
+				if (useController)
 				{
-					if (objCaptured != null && !isPulling)
+					if (Input.GetButton("ControllerShooting"))
 					{
-						objCaptured.GetComponent<EnemyController>().RunFromCapture();
-						StartPull();
+						if (objCaptured != null && !isPulling)
+						{
+							objCaptured.GetComponent<EnemyController>().RunFromCapture();
+							StartPull();
+						}
 					}
-				}
-				else
-				{
+					else
+					{
+						if (isPulling)
+						{
+							KillPull();
+						}
+					}
+
 					if (isPulling)
 					{
-						KillPull();
+						currentMoveModifier = 0.4f;
+
+						if (!checkingTripping)
+						{
+							CheckTrip();
+						}
 					}
-				}
-
-				if (isPulling)
-				{
-					currentMoveModifier = 0.4f;
-
-					if (!checkingTripping)
+					else
 					{
-						CheckTrip();
+						currentMoveModifier = 1;
 					}
-				}
-				else
-				{
-					currentMoveModifier = 1;
-				}
 
-				if (objCaptured != null && !isPulling)
-				{
-					if (Vector3.Distance(objCaptured.transform.position, this.transform.position) > 2.3)
+					if (objCaptured != null && !isPulling)
 					{
-						objCaptured = null;
+						if (Vector3.Distance(objCaptured.transform.position, this.transform.position) > 2.3)
+						{
+							objCaptured = null;
+						}
 					}
+
+					float horizontalChange = Input.GetAxis("Horizontal") * Time.deltaTime * currentMoveModifier * 10;
+					float verticalChange = Input.GetAxis("Vertical") * Time.deltaTime * currentMoveModifier * 10;
+					Vector3 newPos = new Vector3(this.transform.position.x + horizontalChange, 
+					                             this.transform.position.y + verticalChange, 
+					                             0);
+					this.transform.position = newPos;
+
+					Vector3 movingDirection = new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"), 0);
+					movingDirection.Normalize();
+					movingDirection = (movingDirection * 15) + this.transform.position;
+					Utility.PointAt(this.gameObject, movingDirection);
 				}
-
-				float horizontalChange = Input.GetAxis("Horizontal") * Time.deltaTime * currentMoveModifier * 10;
-				float verticalChange = Input.GetAxis("Vertical") * Time.deltaTime * currentMoveModifier * 10;
-				Vector3 newPos = new Vector3(this.transform.position.x + horizontalChange, 
-				                             this.transform.position.y + verticalChange, 
-				                             0);
-				this.transform.position = newPos;
-
-				Vector3 movingDirection = new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"), 0);
-				movingDirection.Normalize();
-				movingDirection = (movingDirection * 15) + this.transform.position;
-				Utility.PointAt(this.gameObject, movingDirection);
 			}
-		}
 
-		if (currentHealth <= 0)
-		{
-			if (!killed)
+			if (currentHealth <= 0)
 			{
-				killed = true;	
-				Instantiate(deathParticleSystem, this.transform.position, Quaternion.identity);
-				this.gameObject.SetActive(false);
+				if (!killed)
+				{
+					killed = true;	
+					Instantiate(deathParticleSystem, this.transform.position, Quaternion.identity);
+					this.gameObject.SetActive(false);
+				}
+				isAlive = false;
 			}
-			isAlive = false;
 		}
 	}
 
@@ -251,6 +315,23 @@ public class PlayerController : MonoBehaviour
 
 	void OnCollisionEnter2D(Collision2D coll)
 	{
+		Item item = coll.gameObject.GetComponent<Item>();
+		if (item)
+		{
+			inventory.Add(item);
+			coll.gameObject.transform.parent = this.transform;
+			coll.gameObject.transform.position = new Vector3(1000, 1000, 1000);
+		}
+
+		LadderController ladderCont = coll.gameObject.GetComponent<LadderController>();
+		if (ladderCont)
+		{
+			// if (ladderCont.canEnter)
+			// {
+				Application.LoadLevel(Application.loadedLevel);
+			// }
+		}
+
 		if ((coll.gameObject.GetComponent<EnemyController>() && canBeDamaged && isAlive) || 
 		    (coll.gameObject.GetComponent<BulletController>()))
 		{
@@ -267,6 +348,21 @@ public class PlayerController : MonoBehaviour
 			Destroy(coll.gameObject);
 			heartContainers[currentHealth].SetActive(true);
 			currentHealth++;
+		}
+	}
+
+	void OnTriggerEnter2D(Collider2D coll)
+	{
+		if (WorldGenerator.instance != null)
+		{
+			if (!WorldGenerator.instance.isGenerating)
+			{
+				WorldPieceController worldPiece = coll.GetComponent<WorldPieceController>();
+				if (worldPiece)
+				{
+					worldPiece.miniMapPiece.SetActive(true);
+				}
+			}
 		}
 	}
 

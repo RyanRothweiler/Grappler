@@ -10,6 +10,9 @@ public class WorldGenerator : MonoBehaviour
 	public GameObject[] enemyPieceLibrary;
 	public GameObject singleEnd;
 	public GameObject doubleEnd;
+	public GameObject ladder;
+
+	public bool isGenerating;
 
 	public GameObject miniMapCamera;
 
@@ -45,6 +48,7 @@ public class WorldGenerator : MonoBehaviour
 
 	public void GenerateWorld()
 	{
+		isGenerating = true;
 		StartCoroutine(GenerateWorld_());
 	}
 	public IEnumerator GenerateWorld_()
@@ -172,6 +176,9 @@ public class WorldGenerator : MonoBehaviour
 			}
 		}
 
+		int ladderIndex = Random.Range(0, openEnemyPositions.Count);
+		GameObject.Instantiate(ladder, openEnemyPositions[ladderIndex], Quaternion.identity);
+
 		foreach(Vector3 enemyPosition in openEnemyPositions)
 		{
 			if (Vector3.Distance(enemyPosition, PlayerController.instance.transform.position) > 5)
@@ -180,7 +187,10 @@ public class WorldGenerator : MonoBehaviour
 				if (fill < 80)
 				{
 					int pieceIndex = Random.Range(0, enemyPieceLibrary.Length);
-					GameObject.Instantiate(enemyPieceLibrary[pieceIndex], enemyPosition, Quaternion.identity);
+					if (enemyPieceLibrary[pieceIndex] != null)
+					{
+						GameObject.Instantiate(enemyPieceLibrary[pieceIndex], enemyPosition, Quaternion.identity);
+					}
 				}
 			}
 		}
@@ -197,17 +207,14 @@ public class WorldGenerator : MonoBehaviour
 			Vector3 newPos = new Vector3(mapPiece.transform.position.x + 2000, mapPiece.transform.position.y + 2000, mapPiece.transform.position.z + 2000);
 			mapPiece.transform.position = newPos;
 			allWorldPieces[pieceIndex].miniMapPiece = mapPiece;
+			mapPiece.SetActive(false);
 
-			if (centerPos.x == 0)
-			{
-				centerPos = newPos;
-			}
-			else
-			{
-				centerPos = (centerPos + newPos) / 2;
-			}
+			centerPos += newPos;
 		}
+		centerPos = centerPos / allWorldPieces.Count;
 		centerPos += new Vector3(0, 0, -250);
 		miniMapCamera.transform.position = centerPos;
+
+		isGenerating = false;
 	}
 }

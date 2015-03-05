@@ -8,8 +8,11 @@ public class CameraController : MonoBehaviour
 	
 	void Update () 
 	{
-        Vector3 newPos = Vector3.Lerp(this.transform.position, focalPoint.transform.position, Time.deltaTime * 6);
-        newPos.z = -10;
-        this.transform.position = newPos;
+		if (!God.instance.isPaused)
+		{
+			Vector3 newPos = Vector3.Lerp(this.transform.position, focalPoint.transform.position, Time.deltaTime * 6);
+			newPos.z = -10;
+			this.transform.position = newPos;
+		}
 	}
 }
