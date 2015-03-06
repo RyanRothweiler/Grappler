@@ -1,21 +1,25 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Healer : MonoBehaviour 
+public class Healer : EnemyBehavior 
 {
 	public float healSpeed;
 	public GameObject objAttached;
 	public LineRenderer healLine;
 
-	void Start()
+	public override void Start()
 	{
+		base.Start();
+
 		this.GetComponent<SpringJoint2D>().connectedBody = objAttached.GetComponent<Rigidbody2D>();
 		healLine = this.GetComponent<LineRenderer>();
 		objAttached.GetComponent<EnemyController>().objectsAttached.Add(this.gameObject);
 	}
 
-	void Update () 
+	public override void Act () 
 	{
+		base.Act();
+
 		if (!objAttached || objAttached.transform.position.x == 1000)
 		{
 			this.healLine.enabled = false;

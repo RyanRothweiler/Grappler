@@ -130,6 +130,8 @@ public class ItemSelectionController : MonoBehaviour
 			if (PlayerController.instance.inventory[index])
 			{
 				Item item = PlayerController.instance.inventory[index];
+				item.stackText.text = "" + item.stackCount;
+				item.gameObject.SetActive(true);
 				item.transform.position = topLeft + new Vector3(index * gridSize, 1, 1);
 			}
 		}
@@ -141,7 +143,10 @@ public class ItemSelectionController : MonoBehaviour
 
 		foreach (Item item in PlayerController.instance.inventory)
 		{
-			item.transform.position = new Vector3(1000, 1000, 1000);
+			if (item != null)
+			{
+				item.gameObject.SetActive(false);
+			}
 		}
 	}
 }

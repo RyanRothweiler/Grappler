@@ -2,22 +2,24 @@
 using System.Collections;
 using Holoville.HOTween;
 
-public class Fly : MonoBehaviour 
+public class Fly : EnemyBehavior 
 {
 
 	public Tweener movingTween;
 	public Vector3 origPos;
 	
-	void Start()
+	public override void Start()
 	{
+		base.Start();
+
 		origPos = this.transform.position;
 		Vector3 newTarget = origPos + new Vector3(Random.Range(-2, 2), Random.Range(-2, 2), Random.Range(-2, 2));
 		movingTween = HOTween.To(this.transform, 1f, "position", newTarget);
 	}
 
-	void Update () 
+	public override void Act () 
 	{
-		if (this.GetComponent<EnemyController>().alive && !this.GetComponent<EnemyController>().isRunning)
+		if (this.GetComponent<EnemyController>().alive && !this.GetComponent<EnemyController>().isRunning && )
 		{
 			if (movingTween.isComplete)
 			{

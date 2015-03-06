@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Generator : MonoBehaviour 
+public class Generator : EnemyBehavior 
 {
 
 	public int spawnTime;
@@ -13,8 +13,10 @@ public class Generator : MonoBehaviour
 	public float lastTimeSpawned;
 	public float nextSpawnTime;
 
-	void Start()
+	public override void Start()
 	{
+		base.Start();
+
 		if (objSpawning == null)
 		{
 			objSpawning = objSpawningOptions[Random.Range(0, objSpawningOptions.Length)];
@@ -22,8 +24,10 @@ public class Generator : MonoBehaviour
 		spawnTime = objSpawning.GetComponent<EnemyController>().generatorSpawnSpeed;
 	}
 
-	void Update () 
+	public override void Act() 
 	{
+		base.Act();
+		
 		float playerDist = Vector3.Distance(this.transform.position, PlayerController.instance.transform.position);
 		if (playerDist < 10)
 		{

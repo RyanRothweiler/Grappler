@@ -17,12 +17,6 @@ public class EMPItem : Item
 			}
 		}
 
-		PlayerController.instance.inventory.Remove(this);
-
 		Instantiate(particles, PlayerController.instance.transform.position, Quaternion.identity);
-
-		buttonIn.uiSprite.sprite = null;
-		buttonIn.itemHolding = null;
-		Destroy(this.gameObject);
 	}
 }

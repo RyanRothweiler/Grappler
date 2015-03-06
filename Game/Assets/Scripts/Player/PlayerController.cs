@@ -318,17 +318,37 @@ public class PlayerController : MonoBehaviour
 		Item item = coll.gameObject.GetComponent<Item>();
 		if (item)
 		{
-			inventory.Add(item);
-			coll.gameObject.transform.parent = this.transform;
-			coll.gameObject.transform.position = new Vector3(1000, 1000, 1000);
+			item.itemHeld = true;
+			bool stacking = false;
+
+			for (int index = 0;
+			     index < inventory.Count;
+			     index++)
+			{
+				if (inventory[index].itemName == item.itemName)
+				{
+					stacking = true;
+					inventory[index].stackCount++;
+					Destroy(item.gameObject);
+					break;
+				}
+			}
+
+			if (!stacking)
+			{
+				inventory.Add(item);
+				coll.gameObject.transform.parent = this.transform;
+				coll.gameObject.transform.position = new Vector3(1000, 1000, 1000);
+			}
 		}
 
 		LadderController ladderCont = coll.gameObject.GetComponent<LadderController>();
 		if (ladderCont)
 		{
+			// Turn this one to allow only gonig through ladders when all the enemies are saved. 
 			// if (ladderCont.canEnter)
 			// {
-				Application.LoadLevel(Application.loadedLevel);
+			Application.LoadLevel(Application.loadedLevel);
 			// }
 		}
 

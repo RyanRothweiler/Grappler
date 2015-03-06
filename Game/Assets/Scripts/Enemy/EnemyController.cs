@@ -9,6 +9,7 @@ public class EnemyController : MonoBehaviour
 	public float maxHealth;
 	public float currentHealth;
 	public GameObject healthBar;
+	public bool isStunned;
 
 	public bool isRunning = false;
 
@@ -20,6 +21,7 @@ public class EnemyController : MonoBehaviour
 
 	void Start () 
 	{
+		isStunned = false;
 		alive = true;
 	}
 	
@@ -63,13 +65,27 @@ public class EnemyController : MonoBehaviour
 		Rigidbody2D body = this.gameObject.GetComponent<Rigidbody2D>() as Rigidbody2D;
 		while (isRunning)
 		{
-			Utility.PointAt(this.gameObject, PlayerController.instance.gameObject.transform.position);
-			if (Random.Range(0, 100) < 70)
+			if (!isStunned)
 			{
-				body.AddForce((-this.transform.up * 500) + new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f), 0));
+				Utility.PointAt(this.gameObject, PlayerController.instance.gameObject.transform.position);
+				if (Random.Range(0, 100) < 70)
+				{
+					body.AddForce((-this.transform.up * 500) + new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f), 0));
+				}
+				body.AddForce((-this.transform.up * 250) + new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f), 0));
 			}
-			body.AddForce((-this.transform.up * 250) + new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f), 0));
 			yield return new WaitForSeconds(0.1f);
 		}
+	}
+
+	public void Stun(int length)
+	{
+		isStunned = true;
+		StartCoroutine(Stun_(length));
+	}
+	private IEnumerator Stun_(int length)
+	{
+		yield return new WaitForSeconds(length);
+		isStunned = false;
 	}
 }

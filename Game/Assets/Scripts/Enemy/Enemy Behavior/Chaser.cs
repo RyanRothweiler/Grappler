@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Chaser : MonoBehaviour 
+public class Chaser : EnemyBehavior 
 {
-	public void Update()
+	public override void Act()
 	{
 		if (Vector3.Distance(PlayerController.instance.gameObject.transform.position, this.transform.position) < 10)
 		{

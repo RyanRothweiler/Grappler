@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Shooter : MonoBehaviour 
+public class Shooter : EnemyBehavior 
 {
 
 	public GameObject bulletObj;
@@ -14,8 +14,10 @@ public class Shooter : MonoBehaviour
 	public float nextSpawnTime;
 
 	
-	void Update () 
+	public override void Act () 
 	{
+		base.Act();
+		
 		float playerDist = Vector3.Distance(this.transform.position, PlayerController.instance.transform.position);
 		if (playerDist < 10)
 		{

@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Avoider : MonoBehaviour 
+public class Avoider : EnemyBehavior 
 {
-	public void Update()
+	public override void Act()
 	{
 		float dist = Vector3.Distance(PlayerController.instance.gameObject.transform.position, 
 		                              this.gameObject.transform.position);
