@@ -9,6 +9,8 @@ public class EnemyController : MonoBehaviour
 	public float maxHealth;
 	public float currentHealth;
 	public GameObject healthBar;
+
+	public GameObject stunIcon;
 	public bool isStunned;
 
 	public bool isRunning = false;
@@ -80,6 +82,7 @@ public class EnemyController : MonoBehaviour
 
 	public void Stun(int length)
 	{
+		stunIcon.SetActive(true);
 		isStunned = true;
 		StartCoroutine(Stun_(length));
 	}
@@ -87,5 +90,6 @@ public class EnemyController : MonoBehaviour
 	{
 		yield return new WaitForSeconds(length);
 		isStunned = false;
+		stunIcon.SetActive(false);
 	}
 }

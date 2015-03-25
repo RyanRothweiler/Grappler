@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\Scripts\BulletController.cs" />
+     <Compile Include="Assets\Scripts\Chest.cs" />
      <Compile Include="Assets\Scripts\Enemy\Creation Pieces\FlyNest.cs" />
      <Compile Include="Assets\Scripts\Enemy\Creation Pieces\GeneratorFlyNest.cs" />
      <Compile Include="Assets\Scripts\Enemy\Creation Pieces\HealAvoid.cs" />
@@ -75,6 +76,7 @@
      <Compile Include="Assets\Scripts\Player\CaptureController.cs" />
      <Compile Include="Assets\Scripts\Player\PlayerController.cs" />
      <Compile Include="Assets\Scripts\Player\RadialBarController.cs" />
+     <Compile Include="Assets\Scripts\TutorialLadder.cs" />
      <Compile Include="Assets\Scripts\Utility\DeathTimer.cs" />
      <Compile Include="Assets\Scripts\Utility\Utility.cs" />
      <Compile Include="Assets\Scripts\World Generation\SocketController.cs" />

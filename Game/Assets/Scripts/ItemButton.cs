@@ -8,9 +8,24 @@ public class ItemButton : MonoBehaviour
 	public SpriteRenderer uiSprite;
 	public TextMesh stackText;
 
+	public SpriteRenderer controllerButtonIcon;
+	public Sprite psButtonIcon;
+	public Sprite xboxButtonIcon;
+
+	public void Start()
+	{
+		if (God.instance.psControllerLayout)
+		{
+			this.controllerButtonIcon.sprite = psButtonIcon;
+		}
+		else
+		{
+			this.controllerButtonIcon.sprite = xboxButtonIcon;
+		}
+	}
+
 	public void Use()
 	{
-
 		if (itemHolding != null)
 		{
 			itemHolding.Use();
@@ -34,10 +49,12 @@ public class ItemButton : MonoBehaviour
 	{
 		if (itemHolding != null)
 		{
+			controllerButtonIcon.enabled = false;
 			stackText.text = "" + itemHolding.stackCount;
 		}
 		else
 		{
+			controllerButtonIcon.enabled = true;
 			stackText.text = "";
 		}
 	}

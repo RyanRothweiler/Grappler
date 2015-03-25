@@ -9,7 +9,7 @@ public class ShooterGroup : MonoBehaviour
 	void Start () 
 	{
 		for (int i = 0;
-		     i < 2;
+		     i < 1;
 		     i++)
 		{
 			GameObject.Instantiate(shooter, this.transform.position, Quaternion.identity);

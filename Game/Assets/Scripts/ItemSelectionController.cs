@@ -12,6 +12,7 @@ public class ItemSelectionController : MonoBehaviour
 	public GameObject selectorBox;
 
 	public bool buttonReleased = true;
+	public bool canMove = true;
 
 	private float gridSize = 3;
 
@@ -24,32 +25,44 @@ public class ItemSelectionController : MonoBehaviour
 	{
 		if (inItemSelection)
 		{
-			if ((Input.GetAxis("DPadVertical") > 0) && buttonReleased)
+			if ((Input.GetAxis("DPadVertical") > 0 || Input.GetAxis("Vertical") > 0) 
+			    && buttonReleased && canMove)
 			{
+				canMove = false;
+				StartCoroutine(ResetCanMove());
 				buttonReleased = false;
 				Vector3 newPos = new Vector3(selectorBox.transform.position.x, 
 				                             selectorBox.transform.position.y + gridSize, 
 				                             selectorBox.transform.position.z);
 				selectorBox.transform.position = newPos;
 			}
-			if ((Input.GetAxis("DPadVertical") < 0) && buttonReleased)
+			if ((Input.GetAxis("DPadVertical") < 0  || Input.GetAxis("Vertical") < 0)
+			    && buttonReleased && canMove)
 			{
+				canMove = false;
+				StartCoroutine(ResetCanMove());
 				buttonReleased = false;
 				Vector3 newPos = new Vector3(selectorBox.transform.position.x, 
 				                             selectorBox.transform.position.y - gridSize, 
 				                             selectorBox.transform.position.z);
 				selectorBox.transform.position = newPos;
 			}
-			if ((Input.GetAxis("DPadHorizontal") > 0) && buttonReleased)
+			if ((Input.GetAxis("DPadHorizontal") > 0 || Input.GetAxis("Horizontal") > 0) 
+			    && buttonReleased && canMove)
 			{
+				canMove = false;
+				StartCoroutine(ResetCanMove());
 				buttonReleased = false;
 				Vector3 newPos = new Vector3(selectorBox.transform.position.x + gridSize, 
 				                             selectorBox.transform.position.y, 
 				                             selectorBox.transform.position.z);
 				selectorBox.transform.position = newPos;
 			}
-			if ((Input.GetAxis("DPadHorizontal") < 0) && buttonReleased)
+			if ((Input.GetAxis("DPadHorizontal") < 0 || Input.GetAxis("Horizontal") < 0)
+			    && buttonReleased && canMove)
 			{
+				canMove = false;
+				StartCoroutine(ResetCanMove());
 				buttonReleased = false;
 				Vector3 newPos = new Vector3(selectorBox.transform.position.x - gridSize, 
 				                             selectorBox.transform.position.y, 
@@ -114,12 +127,18 @@ public class ItemSelectionController : MonoBehaviour
 		}
 	}
 
+	public IEnumerator ResetCanMove()
+	{
+		yield return new WaitForSeconds(0.2f);
+		canMove = true;
+	}
+
 	public void OpenItemSelection()
 	{
 		selectionObjects.SetActive(true);
 
 		Vector3 topLeft = new Vector3(this.transform.position.x - (gridSize * 4), 
-		                              this.transform.position.y - (gridSize * 2), 
+		                              this.transform.position.y - (gridSize), 
 		                              this.transform.position.z);
 		topLeft += new Vector3(0.1f, 2f, 0);
 
@@ -133,6 +152,7 @@ public class ItemSelectionController : MonoBehaviour
 				item.stackText.text = "" + item.stackCount;
 				item.gameObject.SetActive(true);
 				item.transform.position = topLeft + new Vector3(index * gridSize, 1, 1);
+				item.transform.rotation = Quaternion.Euler(0, 0, 0);
 			}
 		}
 	}

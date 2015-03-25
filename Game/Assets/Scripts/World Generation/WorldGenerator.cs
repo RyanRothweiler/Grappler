@@ -8,9 +8,11 @@ public class WorldGenerator : MonoBehaviour
 
 	public GameObject[] worldPieceLibrary;
 	public GameObject[] enemyPieceLibrary;
+	public GameObject[] itemLibrary;
 	public GameObject singleEnd;
 	public GameObject doubleEnd;
 	public GameObject ladder;
+	public GameObject chest;
 
 	public bool isGenerating;
 
@@ -53,6 +55,8 @@ public class WorldGenerator : MonoBehaviour
 	}
 	public IEnumerator GenerateWorld_()
 	{
+		// generate the walls
+
 		List<WorldPieceController> allWorldPieces = new List<WorldPieceController>();
 		GameObject rootPiece = CreatePiece();
 		allWorldPieces.Add(rootPiece.GetComponent<WorldPieceController>());
@@ -163,6 +167,9 @@ public class WorldGenerator : MonoBehaviour
 		}
 
 
+
+		// enemies
+
 		List<Vector3> openEnemyPositions = new List<Vector3>();
 		for (int pieceIndex = 0;
 		     pieceIndex < allWorldPieces.Count;
@@ -176,6 +183,7 @@ public class WorldGenerator : MonoBehaviour
 			}
 		}
 
+		// ladder
 		int ladderIndex = Random.Range(0, openEnemyPositions.Count);
 		GameObject.Instantiate(ladder, openEnemyPositions[ladderIndex], Quaternion.identity);
 
@@ -195,6 +203,9 @@ public class WorldGenerator : MonoBehaviour
 			}
 		}
 
+
+
+		// minimap
 
 		Vector3 centerPos = new Vector3(0, 0, 0);
 		for (int pieceIndex = 0;
@@ -216,5 +227,43 @@ public class WorldGenerator : MonoBehaviour
 		miniMapCamera.transform.position = centerPos;
 
 		isGenerating = false;
+
+
+
+
+		// place some assorted items
+		foreach (Vector3 enemyPosition in openEnemyPositions)
+		{
+			int chance = Random.Range(0, 100);
+			if (chance < 20)
+			{
+				for (int index = 0;
+				     index < Random.Range(1, 2); 
+				     index++)
+				{
+					GameObject itemCreating = itemLibrary[Random.Range(0, itemLibrary.Length)];
+					GameObject.Instantiate(itemCreating, enemyPosition, Quaternion.identity);
+				}
+			}
+		}
+
+
+
+		// place some chests items
+		foreach (Vector3 enemyPosition in openEnemyPositions)
+		{
+			int chance = Random.Range(0, 100);
+			if (chance < 20)
+			{
+				GameObject newChest = GameObject.Instantiate(chest, enemyPosition, Quaternion.identity) as GameObject;
+				for (int index = 0;
+				     index < Random.Range(1, 4); 
+				     index++)
+				{
+					GameObject itemCreating = itemLibrary[Random.Range(0, itemLibrary.Length)];
+					newChest.GetComponent<Chest>().itemsHolding.Add(itemCreating);
+				}
+			}
+		}
 	}
 }

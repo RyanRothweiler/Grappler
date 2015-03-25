@@ -17,14 +17,25 @@ public class Fly : EnemyBehavior
 		movingTween = HOTween.To(this.transform, 1f, "position", newTarget);
 	}
 
+	public override void Update()
+	{
+		base.Update();
+
+		if (this.GetComponent<EnemyController>().isStunned || God.instance.isPaused)
+		{
+			// HOTween.Kill(movingTween);
+			movingTween.Complete();
+		}
+	} 
+
 	public override void Act () 
 	{
-		if (this.GetComponent<EnemyController>().alive && !this.GetComponent<EnemyController>().isRunning && )
+		if (this.GetComponent<EnemyController>().alive && !this.GetComponent<EnemyController>().isRunning)
 		{
-			if (movingTween.isComplete)
+			if (movingTween.isComplete || movingTween == null)
 			{
 				Vector3 newTarget = origPos + new Vector3(Random.Range(-1.5f, 1.5f), 
-					Random.Range(-1.5f, 1.5f), Random.Range(-1.5f, 1.5f));
+				                                          Random.Range(-1.5f, 1.5f), Random.Range(-1.5f, 1.5f));
 				movingTween = HOTween.To(this.transform, Random.Range(0.2f, 0.8f), "position", newTarget);
 			}
 		}

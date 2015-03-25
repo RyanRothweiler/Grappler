@@ -11,7 +11,7 @@ public class StunnerItem : Item
 		EnemyController[] enemies = GameObject.FindObjectsOfType<EnemyController>();
 		foreach (EnemyController controller in enemies)
 		{
-			if (Vector3.Distance(PlayerController.instance.transform.position, controller.transform.position) < 5.2f)
+			if (Vector3.Distance(PlayerController.instance.transform.position, controller.transform.position) < 5.5f)
 			{
 				controller.Stun(3);
 			}

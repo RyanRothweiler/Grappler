@@ -58,8 +58,6 @@ public class PlayerController : MonoBehaviour
 	public ItemButton actionWest;
 
 
-	// public 
-
 	void Start () 
 	{
 		instance = this;
@@ -93,11 +91,6 @@ public class PlayerController : MonoBehaviour
 				ItemSelectionController.instance.OpenItemSelection();
 				ItemSelectionController.instance.inItemSelection = true;
 			}
-		}
-
-		if (ItemSelectionController.instance.inItemSelection)
-		{
-
 		}
 
 		if (!God.instance.isPaused)
@@ -182,7 +175,7 @@ public class PlayerController : MonoBehaviour
 
 					if (objCaptured != null && !isPulling)
 					{
-						if (Vector3.Distance(objCaptured.transform.position, this.transform.position) > 2.3)
+						if (Vector3.Distance(objCaptured.transform.position, this.transform.position) > 2.5)
 						{
 							objCaptured = null;
 						}
@@ -315,6 +308,13 @@ public class PlayerController : MonoBehaviour
 
 	void OnCollisionEnter2D(Collision2D coll)
 	{
+		Chest chest = coll.gameObject.GetComponent<Chest>();
+		if (chest && !chest.open)
+		{
+			chest.Open();
+			return;
+		}
+
 		Item item = coll.gameObject.GetComponent<Item>();
 		if (item)
 		{
@@ -340,6 +340,17 @@ public class PlayerController : MonoBehaviour
 				coll.gameObject.transform.parent = this.transform;
 				coll.gameObject.transform.position = new Vector3(1000, 1000, 1000);
 			}
+			return;
+		}
+
+		TutorialLadder tutLadder = coll.gameObject.GetComponent<TutorialLadder>();
+		if (tutLadder)
+		{
+			if (tutLadder.canEnter)
+			{
+				Application.LoadLevel(tutLadder.GetComponent<TutorialLadder>().sceneIndexTo);
+			}
+			return;
 		}
 
 		LadderController ladderCont = coll.gameObject.GetComponent<LadderController>();
@@ -350,17 +361,26 @@ public class PlayerController : MonoBehaviour
 			// {
 			Application.LoadLevel(Application.loadedLevel);
 			// }
+			return;
 		}
 
 		if ((coll.gameObject.GetComponent<EnemyController>() && canBeDamaged && isAlive) || 
 		    (coll.gameObject.GetComponent<BulletController>()))
 		{
 			TakeDamage();
+
+			if (coll.gameObject.GetComponent<BulletController>())
+			{
+				Destroy(coll.gameObject);
+			}
+
+			return;
 		}
 
 		if (coll.gameObject.GetComponent<BulletController>())
 		{
 			Destroy(coll.gameObject);
+			return;
 		}
 
 		if (coll.gameObject.GetComponent<HeartPickup>())
@@ -368,6 +388,7 @@ public class PlayerController : MonoBehaviour
 			Destroy(coll.gameObject);
 			heartContainers[currentHealth].SetActive(true);
 			currentHealth++;
+			return;
 		}
 	}
 
@@ -393,6 +414,7 @@ public class PlayerController : MonoBehaviour
 		currentHealth--;
 		canBeDamaged = false;
 		ResetCanBeDamaged();
+		// Debug.Break();
 	}
 
 	public void ResetCanBeDamaged()

@@ -13,7 +13,7 @@ public class EMPItem : Item
 		{
 			if (Vector3.Distance(PlayerController.instance.transform.position, controller.transform.position) < 5.2f)
 			{
-				controller.currentHealth -= 20;
+				controller.currentHealth -= 40;
 			}
 		}
 

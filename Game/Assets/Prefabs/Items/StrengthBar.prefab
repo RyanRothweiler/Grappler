@@ -29,6 +29,23 @@ GameObject:
   - 23: {fileID: 2380048}
   - 102: {fileID: 10205864}
   m_Layer: 0
+  m_Name: NameText
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!1 &197390
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  serializedVersion: 4
+  m_Component:
+  - 4: {fileID: 445110}
+  - 23: {fileID: 2322068}
+  - 102: {fileID: 10243656}
+  m_Layer: 0
   m_Name: StockText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -42,6 +59,18 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 169444}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -.090000011}
+  m_LocalScale: {x: .153076246, y: .153076246, z: .153076246}
+  m_Children: []
+  m_Father: {fileID: 455376}
+  m_RootOrder: 1
+--- !u!4 &445110
+Transform:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 197390}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -.0900000036}
   m_LocalScale: {x: .153076246, y: .153076246, z: .153076246}
   m_Children: []
@@ -54,12 +83,37 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 114924}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 5.9000001, y: -2.77999997, z: 0}
+  m_LocalPosition: {x: 2.55999994, y: 2.16000009, z: 0}
   m_LocalScale: {x: .357408464, y: .357408464, z: .357408464}
   m_Children:
+  - {fileID: 445110}
   - {fileID: 428934}
   m_Father: {fileID: 0}
   m_RootOrder: 0
+--- !u!23 &2322068
+MeshRenderer:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 197390}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: e3baeb1f136b840448e780d3595c087c, type: 3}
+  m_SubsetIndices: 
+  m_StaticBatchRoot: {fileID: 0}
+  m_UseLightProbes: 1
+  m_ReflectionProbeUsage: 1
+  m_ProbeAnchor: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_PreserveUVs: 0
+  m_ImportantGI: 0
+  m_AutoUVMaxDistance: .5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
 --- !u!23 &2380048
 MeshRenderer:
   m_ObjectHideFlags: 1
@@ -104,6 +158,29 @@ TextMesh:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 169444}
+  m_Text: 'Strength Bar
+
+'
+  m_OffsetZ: 0
+  m_CharacterSize: 1
+  m_LineSpacing: 1
+  m_Anchor: 4
+  m_Alignment: 0
+  m_TabSize: 4
+  m_FontSize: 0
+  m_FontStyle: 0
+  m_RichText: 1
+  m_Font: {fileID: 12800000, guid: e3baeb1f136b840448e780d3595c087c, type: 3}
+  m_Color:
+    serializedVersion: 2
+    rgba: 4294967295
+--- !u!102 &10243656
+TextMesh:
+  serializedVersion: 3
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 197390}
   m_Text: '
 
 '
@@ -134,7 +211,9 @@ MonoBehaviour:
   buttonIn: {fileID: 0}
   stackCount: 1
   itemName: Strength Bar
-  stackText: {fileID: 10205864}
+  itemHeld: 0
+  nameText: {fileID: 10205864}
+  stackText: {fileID: 10243656}
 --- !u!212 &21223898
 SpriteRenderer:
   m_ObjectHideFlags: 1

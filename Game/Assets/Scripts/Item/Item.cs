@@ -6,8 +6,10 @@ public class Item : MonoBehaviour
 	public ItemButton buttonIn;
 	public int stackCount;
 	public string itemName;
-	public TextMesh stackText;
 	public bool itemHeld;
+	
+	public TextMesh nameText;
+	public TextMesh stackText;
 
 	public void Start()
 	{
@@ -19,6 +21,11 @@ public class Item : MonoBehaviour
 		if (itemHeld)
 		{
 			stackText.text = "" + stackCount;
+			nameText.gameObject.SetActive(true);
+		}
+		else
+		{
+			nameText.gameObject.SetActive(false);
 		}
 	}
 

@@ -4,4 +4,14 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/BaseLevel.unity
+  - enabled: 1
+    path: Assets/Scenes/LevelGenerationPieces.unity
+  - enabled: 1
+    path: Assets/Scenes/PullTutorial.unity
+  - enabled: 1
+    path: Assets/Scenes/TestBed.unity
+  - enabled: 1
+    path: Assets/Scenes/ItemTutorial.unity

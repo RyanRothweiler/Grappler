@@ -24,8 +24,10 @@ public class CaptureController : MonoBehaviour
 				}
 				else
 				{
-					float newCollDist = Vector3.Distance(PlayerController.instance.objCaptured.transform.position, PlayerController.instance.gameObject.transform.position);
-					float oldCollDist = Vector3.Distance(coll.gameObject.transform.position, PlayerController.instance.gameObject.transform.position);
+					float newCollDist = Vector3.Distance(PlayerController.instance.objCaptured.transform.position, 
+					                                     PlayerController.instance.gameObject.transform.position);
+					float oldCollDist = Vector3.Distance(coll.gameObject.transform.position, 
+					                                     PlayerController.instance.gameObject.transform.position);
 					if (newCollDist > oldCollDist)
 					{
 						PlayerController.instance.objCaptured = coll.gameObject;
