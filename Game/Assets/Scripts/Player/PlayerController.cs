@@ -282,7 +282,10 @@ public class PlayerController : MonoBehaviour
 
 	public void KillPull()
 	{
-		objCaptured.GetComponent<EnemyController>().isRunning = false;
+		if (objCaptured != null)
+		{
+			objCaptured.GetComponent<EnemyController>().isRunning = false;
+		}
 		this.pullJoint.enabled = false;
 		pullLine.enabled = false;
 		isPulling = false;
