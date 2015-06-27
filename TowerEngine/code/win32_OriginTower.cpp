@@ -10,8 +10,16 @@ typedef _int16 int16;
 typedef _int32 int32;
 typedef _int64 int64;
 
-bool GlobalRunning = true;
+typedef unsigned _int8 uint8;
+typedef unsigned _int16 uint16;
+typedef unsigned _int32 uint32;
+typedef unsigned _int64 uint64;
 
+HWND WindowHandle;
+bool GlobalRunning = true;
+void *PixelData = {};
+DWORD WindowWidth = {};
+DWORD WindowHeight = {};
 
 struct controller
 {
@@ -56,11 +64,43 @@ ConcatStrings(char *SourceA, char *SourceB, char *Destination)
 }
 
 void 
+UpdateScreenSize()
+{
+	RECT WindowRect;
+	GetWindowRect(WindowHandle, &WindowRect);
+	WindowWidth = WindowRect.right - WindowRect.left;
+	WindowHeight = WindowRect.bottom - WindowRect.top;
+}
+
+void 
 DebugLine(char *output)
 {
 	char finalOutput[MAX_PATH];
 	ConcatStrings(output, "\n", finalOutput);
 	OutputDebugString(finalOutput);
+}
+
+void
+DrawPixels(HWND WindowHandle)
+{
+	HDC DeviceContext = GetDC(WindowHandle);
+
+	BITMAPINFO BitMapInfo = {};
+	BitMapInfo.bmiHeader.biSize = sizeof(BitMapInfo.bmiHeader);
+	BitMapInfo.bmiHeader.biWidth = WindowWidth;
+	BitMapInfo.bmiHeader.biHeight = -1 * (int32)WindowHeight;
+	BitMapInfo.bmiHeader.biPlanes = 1;
+	BitMapInfo.bmiHeader.biBitCount = 32;
+	BitMapInfo.bmiHeader.biCompression = BI_RGB;
+
+	StretchDIBits(DeviceContext,
+	              0, 0, WindowWidth, WindowHeight,
+	              0, 0, WindowWidth, WindowHeight,
+	              PixelData, &BitMapInfo,
+	              DIB_RGB_COLORS, 
+	              SRCCOPY);
+
+	ReleaseDC(WindowHandle, DeviceContext);
 }
 
 LRESULT CALLBACK 
@@ -76,6 +116,8 @@ WindowProcedure(HWND WindowHandle, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_SIZE:
 		{
+			UpdateScreenSize();
+			DrawPixels(WindowHandle);
 		} break;
 
 		case WM_CLOSE:
@@ -95,7 +137,6 @@ WindowProcedure(HWND WindowHandle, UINT uMsg, WPARAM wParam, LPARAM lParam)
 int CALLBACK 
 WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowCode)
 {
-
 	WNDCLASS WindowClass = {};
 	WindowClass.style = CS_HREDRAW|CS_VREDRAW;
 	WindowClass.lpfnWndProc = WindowProcedure;
@@ -104,7 +145,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 
 	if(RegisterClass(&WindowClass))
 	{
-		HWND WindowHandle = 
+		WindowHandle = 
 		CreateWindowEx(
 		               0,
 		               WindowClass.lpszClassName,
@@ -122,6 +163,56 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 		{
 
 			controller Controller;
+
+
+
+			UpdateScreenSize();
+
+			uint32 BytesPerPixel = 4;
+			uint32 Pitch = WindowWidth * BytesPerPixel;
+
+			uint32 MemSize = WindowWidth * WindowHeight * BytesPerPixel;
+
+			PixelData =  VirtualAlloc(0,
+			                          MemSize, 
+			                          MEM_COMMIT, PAGE_READWRITE);
+
+			if (PixelData == NULL)
+			{
+				Assert(0);
+			}
+
+			uint8 *Row = (uint8 *)PixelData;
+			for (uint32 Y = 0;
+			     Y < WindowHeight;
+			     ++Y)
+			{
+				uint8 *Pixel = (uint8 *)Row;
+				for (uint32 X = 0;
+				     X < WindowWidth;
+				     ++X)
+				{
+					// B
+					*Pixel = 100;
+					++Pixel;
+
+					// G
+					*Pixel = 100;
+					++Pixel;
+
+					// R
+					*Pixel = 255;
+					++Pixel;
+
+					// A?
+					*Pixel = 2;
+					++Pixel;
+
+				}
+				Row += Pitch;
+			}
+
+
 
 			while (GlobalRunning)
 			{
@@ -158,23 +249,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 						}
 					}
 
-					HDC DeviceContext = GetDC(WindowHandle);
-
-					RECT WindowRect;
-					GetWindowRect(WindowHandle, &WindowRect);
-					DWORD WindowWidth = WindowRect.right;
-					DWORD WindowHeight = WindowRect.bottom;
-
-					void *PixelData;
-					BITMAPINFO *BitMapInfo;
-					StretchDIBits(DeviceContext,
-					              0, 0, WindowWidth, WindowHeight,
-					              0, 0, WindowWidth, WindowHeight,
-					              PixelData, BitMapInfo,
-					              DIB_RGB_COLORS, 
-					              WHITENESS);
-
-					ReleaseDC(WindowHandle, DeviceContext);
+					DrawPixels(WindowHandle);
 				}
 			}
 		}
