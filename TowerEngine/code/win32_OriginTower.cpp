@@ -5,10 +5,6 @@
 
 #define Assert(Expression) if (!(Expression)) {*(int *)0 = 0;}
 
-// #define XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE  7849
-// #define XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
-// #define XINPUT_GAMEPAD_TRIGGER_THRESHOLD    30
-
 typedef _int8 int8;
 typedef _int16 int16;
 typedef _int32 int32;
@@ -30,13 +26,13 @@ struct color
 	uint8 A;
 };
 
-struct window_screen
+struct screen_buffer
 {
 	DWORD Width;
 	DWORD Height;
 
 	uint32 BytesPerPixel = 4;
-	void *PixelData;
+	void *ScreenBuffer;
 	
 	color BackgroundColor;
 };
@@ -52,26 +48,24 @@ struct controller
 	bool32 DRight;
 	bool32 DLeft;
 	bool32 DDown;
+
+	float LeftStickX;
+	float LeftStickY;
+
 };
 
-struct Vector2
+struct player
 {
-
+	float PosX;
+	float PosY;
+	uint16 Width;
+	color Color;
 };
 
 
-HWND WindowHandle;
 bool GlobalRunning = true;
-window_screen WindowScreen;
+screen_buffer ScreenBuffer;
 
-float leftX;
-float leftY;
-
-float test;
-
-float PlayerX;
-float PlayerY;
-int32 PlayerWidth;
 
 float 
 SquareRoot(float num)
@@ -155,12 +149,12 @@ CheckStickDeadzone(short Value, SHORT DeadZoneThreshold)
 }
 
 void 
-UpdateScreenSize()
+UpdateScreenSize(HWND WindowHandle)
 {
 	RECT WindowRect;
 	GetWindowRect(WindowHandle, &WindowRect);
-	WindowScreen.Width = WindowRect.right - WindowRect.left;
-	WindowScreen.Height = WindowRect.bottom - WindowRect.top;
+	ScreenBuffer.Width = WindowRect.right - WindowRect.left;
+	ScreenBuffer.Height = WindowRect.bottom - WindowRect.top;
 }
 
 void
@@ -170,16 +164,16 @@ DrawPixels(HWND WindowHandle)
 
 	BITMAPINFO BitMapInfo = {};
 	BitMapInfo.bmiHeader.biSize = sizeof(BitMapInfo.bmiHeader);
-	BitMapInfo.bmiHeader.biWidth = WindowScreen.Width;
-	BitMapInfo.bmiHeader.biHeight = -1 * (int32)WindowScreen.Height;
+	BitMapInfo.bmiHeader.biWidth = ScreenBuffer.Width;
+	BitMapInfo.bmiHeader.biHeight = -1 * (int32)ScreenBuffer.Height;
 	BitMapInfo.bmiHeader.biPlanes = 1;
 	BitMapInfo.bmiHeader.biBitCount = 32;
 	BitMapInfo.bmiHeader.biCompression = BI_RGB;
 
 	StretchDIBits(DeviceContext,
-	              0, 0, WindowScreen.Width, WindowScreen.Height,
-	              0, 0, WindowScreen.Width, WindowScreen.Height,
-	              WindowScreen.PixelData, &BitMapInfo,
+	              0, 0, ScreenBuffer.Width, ScreenBuffer.Height,
+	              0, 0, ScreenBuffer.Width, ScreenBuffer.Height,
+	              ScreenBuffer.ScreenBuffer, &BitMapInfo,
 	              DIB_RGB_COLORS, 
 	              SRCCOPY);
 
@@ -199,7 +193,7 @@ WindowProcedure(HWND WindowHandle, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_SIZE:
 		{
-			UpdateScreenSize();
+			UpdateScreenSize(WindowHandle);
 			DrawPixels(WindowHandle);
 		} break;
 
@@ -217,73 +211,67 @@ WindowProcedure(HWND WindowHandle, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return(Result);
 }
 
-void
-FillPixels(color Color)
-{
-	uint8 *Row = (uint8 *)WindowScreen.PixelData;
-	for (uint32 Y = 0;
-	     Y < WindowScreen.Height;
-	     ++Y)
-	{
-		uint8 *Pixel = (uint8 *)Row;
-		for (uint32 X = 0;
-		     X < WindowScreen.Width;
-		     ++X)
-		{
-					// B
-			*Pixel = Color.B;
-			++Pixel;
-
-					// G
-			*Pixel = Color.G;
-			++Pixel;
-
-					// R
-			*Pixel = Color.R;
-			++Pixel;
-
-					// A?
-			*Pixel = Color.A;
-			++Pixel;
-
-		}
-		uint32 Pitch = WindowScreen.Width * WindowScreen.BytesPerPixel;
-		Row += Pitch;
-	}
-}
-
 void 
-DrawSquare(uint32 XPos, uint32 YPos, uint32 Width, color color)
+DrawSquare(int32 XPos, int32 YPos, uint32 squareSize, color Color)
 {
-	uint32 Pitch = WindowScreen.Width * WindowScreen.BytesPerPixel;
-	uint8 *Row = (uint8 *)WindowScreen.PixelData + ((XPos * WindowScreen.BytesPerPixel) + (YPos * Pitch));
-	for (uint32 Y = 0;
-	     Y < Width;
-	     ++Y)
+	uint32 MinX = XPos;
+	uint32 MinY = YPos;
+	uint32 Width = squareSize;
+	uint32 Height = Width;
+
+	if (XPos < 0)
 	{
-		uint8 *Pixel = (uint8 *)Row;
-		for (uint32 X = 0;
-		     X < Width;
-		     ++X)
+		MinX = 0;
+		Width = XPos + squareSize;
+	}
+	if (YPos < 0)
+	{
+		MinY = 0;
+		Height = YPos + squareSize;
+	}
+
+	bool draw = true;
+	int32 signedSize = squareSize * -1;
+	if (XPos < signedSize || 
+	    YPos < signedSize ||
+	    XPos > (int32)ScreenBuffer.Width ||
+	    YPos > ((int32)ScreenBuffer.Height - 1))
+	{
+		draw = false;
+	}
+
+
+	if (draw)
+	{
+		uint32 Pitch = ScreenBuffer.Width * ScreenBuffer.BytesPerPixel;
+		uint8 *Row = (uint8 *)ScreenBuffer.ScreenBuffer + ((MinX * ScreenBuffer.BytesPerPixel) + (MinY * Pitch));
+		for (uint32 Y = 0;
+		     Y < Height;
+		     ++Y)
 		{
-					// B
-			*Pixel = color.B;
-			++Pixel;
+			uint8 *Pixel = (uint8 *)Row;
+			for (uint32 X = 0;
+			     X < Width;
+			     ++X)
+			{
+			// B
+				*Pixel = Color.B;
+				++Pixel;
 
-					// G
-			*Pixel = color.G;
-			++Pixel;
+			// G
+				*Pixel = Color.G;
+				++Pixel;
 
-					// R
-			*Pixel = color.R;
-			++Pixel;
+			// R
+				*Pixel = Color.R;
+				++Pixel;
 
-					// A?
-			*Pixel = color.A;
-			++Pixel;
-
+			// A?
+				*Pixel = Color.A;
+				++Pixel;
+			}
+			Row += Pitch;
 		}
-		Row += Pitch;
 	}
 }
 
@@ -298,7 +286,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 
 	if(RegisterClass(&WindowClass))
 	{
-		WindowHandle = 
+		HWND WindowHandle = 
 		CreateWindowEx(
 		               0,
 		               WindowClass.lpszClassName,
@@ -317,25 +305,59 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 
 			controller Controller = {};
 
-			WindowScreen = {};
-			WindowScreen.BackgroundColor.R = 0;
-			WindowScreen.BackgroundColor.G = 0;
-			WindowScreen.BackgroundColor.B = 0;
-			UpdateScreenSize();
+			ScreenBuffer = {};
+			ScreenBuffer.BackgroundColor.R = 0;
+			ScreenBuffer.BackgroundColor.G = 0;
+			ScreenBuffer.BackgroundColor.B = 0;
+			UpdateScreenSize(WindowHandle);
 
-			uint32 MemSize = WindowScreen.Width * WindowScreen.Height * WindowScreen.BytesPerPixel;
-			WindowScreen.PixelData =  VirtualAlloc(0, MemSize, MEM_COMMIT, PAGE_READWRITE);
-			FillPixels(WindowScreen.BackgroundColor);
+			uint32 MemSize = ScreenBuffer.Width * ScreenBuffer.Height * ScreenBuffer.BytesPerPixel;
+			ScreenBuffer.ScreenBuffer =  VirtualAlloc(0, MemSize, MEM_COMMIT, PAGE_READWRITE);
+			uint8 *Row = (uint8 *)ScreenBuffer.ScreenBuffer;
+			for (uint32 Y = 0;
+			     Y < ScreenBuffer.Height;
+			     ++Y)
+			{
+				uint8 *Pixel = (uint8 *)Row;
+				for (uint32 X = 0;
+				     X < ScreenBuffer.Width;
+				     ++X)
+				{	
+					// B
+					*Pixel = ScreenBuffer.BackgroundColor.B;
+					++Pixel;
 
-			if (WindowScreen.PixelData == NULL)
+					// G
+					*Pixel = ScreenBuffer.BackgroundColor.G;
+					++Pixel;
+
+					// R
+					*Pixel = ScreenBuffer.BackgroundColor.R;
+					++Pixel;
+
+					// A?
+					*Pixel = ScreenBuffer.BackgroundColor.A;
+					++Pixel;
+
+				}
+				uint32 Pitch = ScreenBuffer.Width * ScreenBuffer.BytesPerPixel;
+				Row += Pitch;
+			}
+
+			if (ScreenBuffer.ScreenBuffer == NULL)
 			{
 				DebugLine("Pixel Data no initialized correctly.");
 				Assert(0);
 			}
 
-			PlayerX = 10;
-			PlayerY = 10;
-			PlayerWidth = 10;
+
+			player Player = {};
+			Player.PosX = (float)(ScreenBuffer.Width / 2);
+			Player.PosY = (float)(ScreenBuffer.Height / 2);
+			Player.Width = 10;
+			Player.Color.R = 255;
+			Player.Color.G = 100;
+			Player.Color.B = 100;
 
 			while (GlobalRunning)
 			{
@@ -376,8 +398,8 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 						Controller.DLeft = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
 						Controller.DRight = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
 
-						leftX = CheckStickDeadzone(Pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-						leftY = CheckStickDeadzone(Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+						Controller.LeftStickX = CheckStickDeadzone(Pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+						Controller.LeftStickY = CheckStickDeadzone(Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
 
 					}
 					else
@@ -386,56 +408,11 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 					}
 				}
 
+				Player.PosX += Controller.LeftStickX;
+				Player.PosY -= Controller.LeftStickY;
 
-				if (Controller.DUp)
-				{
-					DebugLine("test");
-					// Assert(0);
-				}
-
-				// float magnitude = SquareRoot(leftX * leftX + leftY * leftY);
-				// float normalizedLX = leftX / magnitude;
-				// float normalizedLY = leftY / magnitude;
-
-				// float normalizedMagnitude = 0;
-
-				// if (magnitude > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
-				// {
-				// 	if (magnitude > 32767)
-				// 	{ 
-				// 		magnitude = 32767;
-				// 	}
-				// 	magnitude -= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-				// 	normalizedMagnitude = magnitude / (32767 - XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-				// }
-				// else
-				// {
-				// 	magnitude = 0.0;
-				// 	normalizedMagnitude = 0.0;
-				// }
-
-				PlayerX += leftX;
-				PlayerY -= leftY;
-
-				// if (Controller.DDown)
-				// {
-				// 	PlayerY++;
-				// }
-				// if (Controller.DRight)
-				// {
-				// 	PlayerX++;
-				// }
-				// if (Controller.DLeft)
-				// {
-				// 	PlayerX--;
-				// }
-
-				color PlayerColor;
-				PlayerColor.R = 255;
-				PlayerColor.G = 100;
-				PlayerColor.B = 100;
-				DrawSquare((uint32)PlayerX - 5, (uint32)PlayerY - 5, PlayerWidth * 2, WindowScreen.BackgroundColor);
-				DrawSquare((uint32)PlayerX, (uint32)PlayerY, PlayerWidth, PlayerColor);
+				DrawSquare((uint32)Player.PosX - 5, (uint32)Player.PosY - 5, Player.Width * 2, ScreenBuffer.BackgroundColor);
+				DrawSquare((uint32)Player.PosX, (uint32)Player.PosY, Player.Width, Player.Color);
 
 				DrawPixels(WindowHandle);
 			}
