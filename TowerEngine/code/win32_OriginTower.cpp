@@ -100,8 +100,40 @@ StringLength(char *String)
 	return (Count);
 }
 
+// This is super wonky. Don't really need to put the prev number into a char array. Just hold the last loops number
+int32
+DigitCount(int64 *Input)
+{
+	char NumChar[MAX_PATH] = {};
+	char *NumCharPointer = NumChar;
+
+	int32 Count = 0;
+	int64 tmp = *Input;
+	while (tmp != 0)
+	{
+		tmp = (tmp - *NumCharPointer)/10;
+		Count++;
+	}
+
+	return (Count);
+}
+
 void
-ConcatStrings(char *SourceA, char *SourceB, char *Destination)
+IntToCharArray(int64 *Input, char *Output)
+{
+	int64 tmp = *Input;
+	char *NumCharPointer = Output + DigitCount(&tmp) - 1;
+
+	while (tmp != 0)
+	{
+		*NumCharPointer-- = '0' + (tmp % 10);
+		tmp = (tmp - *NumCharPointer)/10;
+	}
+}
+
+
+void
+ConcatCharArrays(char *SourceA, char *SourceB, char *Destination)
 {
 	int32 SourceALength = StringLength(SourceA);
 	int32 SourceBLength = StringLength(SourceB);	
@@ -124,11 +156,46 @@ ConcatStrings(char *SourceA, char *SourceB, char *Destination)
 }
 
 void 
-DebugLine(char *output)
+DebugLine(int64 *Output)
 {
-	char finalOutput[MAX_PATH];
-	ConcatStrings(output, "\n", finalOutput);
-	OutputDebugString(finalOutput);
+	char NumChar[MAX_PATH] = {};
+	IntToCharArray(Output, NumChar);
+
+	char FinalOutput[MAX_PATH] = {};
+	ConcatCharArrays(NumChar, "\n", FinalOutput);
+	OutputDebugString(FinalOutput);
+}
+
+void 
+DebugLine(int64 Output)
+{
+	DebugLine(&Output);
+}
+
+void 
+DebugLine(char *Output)
+{
+	char FinalOutput[MAX_PATH] = {};
+	ConcatCharArrays(Output, "\n", FinalOutput);
+	OutputDebugString(FinalOutput);
+}
+
+void
+ConcatIntChar(int64 IntInput, char *CharInput, 
+              char *CharOutput)
+{
+	char IntInputAsChar[MAX_PATH] = {};
+	IntToCharArray(&IntInput, IntInputAsChar);
+	ConcatCharArrays(IntInputAsChar, CharInput, CharOutput);
+}
+
+void
+ConcatIntChar(char *CharInput, int64 IntInput, 
+              char *CharOutput)
+{
+	char IntInputAsChar[MAX_PATH] = {};
+	IntToCharArray(&IntInput, IntInputAsChar);
+	ConcatCharArrays(IntInputAsChar, CharInput, CharOutput);
 }
 
 float
@@ -214,64 +281,56 @@ WindowProcedure(HWND WindowHandle, UINT uMsg, WPARAM wParam, LPARAM lParam)
 void 
 DrawSquare(int32 XPos, int32 YPos, uint32 squareSize, color Color)
 {
-	uint32 MinX = XPos;
-	uint32 MinY = YPos;
-	uint32 Width = squareSize;
-	uint32 Height = Width;
+	int32 MinX = XPos;
+	int32 MinY = YPos;
+	int32 MaxX = XPos + squareSize;
+	int32 MaxY = YPos + squareSize;
 
-	if (XPos < 0)
+	if (MinX < 0)
 	{
 		MinX = 0;
-		Width = XPos + squareSize;
 	}
-	if (YPos < 0)
+	if (MinY < 0)
 	{
 		MinY = 0;
-		Height = YPos + squareSize;
+	}
+	if (MaxX > (int32)ScreenBuffer.Width)
+	{
+		MaxX = (int32)ScreenBuffer.Width;
+	}
+	if (MaxY > (int32)ScreenBuffer.Height)
+	{
+		MaxY = (int32)ScreenBuffer.Height;
 	}
 
-	bool draw = true;
-	int32 signedSize = squareSize * -1;
-	if (XPos < signedSize || 
-	    YPos < signedSize ||
-	    XPos > (int32)ScreenBuffer.Width ||
-	    YPos > ((int32)ScreenBuffer.Height - 1))
+	uint32 Pitch = ScreenBuffer.Width * ScreenBuffer.BytesPerPixel;
+	uint8 *Row = (uint8 *)ScreenBuffer.ScreenBuffer + ((MinX * ScreenBuffer.BytesPerPixel) + (MinY * Pitch));
+	for (int32 Y = MinY;
+	     Y < MaxY;
+	     ++Y)
 	{
-		draw = false;
-	}
-
-
-	if (draw)
-	{
-		uint32 Pitch = ScreenBuffer.Width * ScreenBuffer.BytesPerPixel;
-		uint8 *Row = (uint8 *)ScreenBuffer.ScreenBuffer + ((MinX * ScreenBuffer.BytesPerPixel) + (MinY * Pitch));
-		for (uint32 Y = 0;
-		     Y < Height;
-		     ++Y)
+		uint8 *Pixel = (uint8 *)Row;
+		for (int32 X = MinX;
+		     X < MaxX;
+		     ++X)
 		{
-			uint8 *Pixel = (uint8 *)Row;
-			for (uint32 X = 0;
-			     X < Width;
-			     ++X)
-			{
 			// B
-				*Pixel = Color.B;
-				++Pixel;
+			*Pixel = Color.B;
+			++Pixel;
 
 			// G
-				*Pixel = Color.G;
-				++Pixel;
+			*Pixel = Color.G;
+			++Pixel;
 
 			// R
-				*Pixel = Color.R;
-				++Pixel;
+			*Pixel = Color.R;
+			++Pixel;
 
 			// A?
-				*Pixel = Color.A;
-				++Pixel;
-			}
-			Row += Pitch;
+			*Pixel = Color.A;
+			++Pixel;
 		}
+		Row += Pitch;
 	}
 }
 
@@ -354,10 +413,14 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 			player Player = {};
 			Player.PosX = (float)(ScreenBuffer.Width / 2);
 			Player.PosY = (float)(ScreenBuffer.Height / 2);
-			Player.Width = 10;
+			Player.Width = 50;
 			Player.Color.R = 255;
 			Player.Color.G = 100;
 			Player.Color.B = 100;
+
+
+			LARGE_INTEGER PreviousFrameCount;
+			QueryPerformanceCounter(&PreviousFrameCount);
 
 			while (GlobalRunning)
 			{
@@ -408,13 +471,18 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 					}
 				}
 
+
+				DrawSquare((uint32)Player.PosX, (uint32)Player.PosY, Player.Width, ScreenBuffer.BackgroundColor);
 				Player.PosX += Controller.LeftStickX;
 				Player.PosY -= Controller.LeftStickY;
-
-				DrawSquare((uint32)Player.PosX - 5, (uint32)Player.PosY - 5, Player.Width * 2, ScreenBuffer.BackgroundColor);
 				DrawSquare((uint32)Player.PosX, (uint32)Player.PosY, Player.Width, Player.Color);
 
 				DrawPixels(WindowHandle);
+
+				LARGE_INTEGER NewFrameCount;
+				QueryPerformanceCounter(&NewFrameCount);
+				int64 ElapsedFrameCount = NewFrameCount.QuadPart - PreviousFrameCount.QuadPart;
+				PreviousFrameCount = NewFrameCount;
 			}
 		}
 	}
