@@ -1,93 +1,10 @@
-#include <windows.h>
-#include <xinput.h>
 
-#include "win32_OriginTower.h"
-
-#define Assert(Expression) if (!(Expression)) {*(int *)0 = 0;}
-
-typedef _int8 int8;
-typedef _int16 int16;
-typedef _int32 int32;
-typedef _int64 int64;
-
-typedef unsigned _int8 uint8;
-typedef unsigned _int16 uint16;
-typedef unsigned _int32 uint32;
-typedef unsigned _int64 uint64;
-
-typedef int32 bool32;
-
-
-struct color
-{
-	uint8 R;
-	uint8 G;
-	uint8 B;
-	uint8 A;
-};
-
-struct screen_buffer
-{
-	DWORD Width;
-	DWORD Height;
-
-	uint32 BytesPerPixel = 4;
-	void *ScreenBuffer;
-	
-	color BackgroundColor;
-};
-
-struct controller
-{
-	bool32 AButtonDown;
-	bool32 BButtonDown;
-	bool32 XButtonDown;
-	bool32 YButtonDown;
-
-	bool32 DUp;
-	bool32 DRight;
-	bool32 DLeft;
-	bool32 DDown;
-
-	float LeftStickX;
-	float LeftStickY;
-
-};
-
-struct player
-{
-	float PosX;
-	float PosY;
-	uint16 Width;
-	color Color;
-};
-
+#include "OriginTower.h"
 
 bool GlobalRunning = true;
 screen_buffer ScreenBuffer;
-
-
-float 
-SquareRoot(float num)
-{
-	float i=0;
-	float x1,x2;
-
-	while( (i*i) <= num )
-	{
-		i+=0.1f;
-	}
-	x1=i;
-	for(int j=0;j<10;j++)
-	{
-		x2=num;
-		x2/=x1;
-		x2+=x1;
-		x2/=2;
-		x1=x2;
-	}
-	return x2;
-}
+int64 ElapsedFrameCount;
+int64 PerfCountFrequency;
 
 int32
 StringLength(char *String)
@@ -100,7 +17,6 @@ StringLength(char *String)
 	return (Count);
 }
 
-// This is super wonky. Don't really need to put the prev number into a char array. Just hold the last loops number
 int32
 DigitCount(int64 *Input)
 {
@@ -111,7 +27,7 @@ DigitCount(int64 *Input)
 	int64 tmp = *Input;
 	while (tmp != 0)
 	{
-		tmp = (tmp - *NumCharPointer)/10;
+		tmp = (tmp - *NumCharPointer) / 10;
 		Count++;
 	}
 
@@ -127,7 +43,7 @@ IntToCharArray(int64 *Input, char *Output)
 	while (tmp != 0)
 	{
 		*NumCharPointer-- = '0' + (tmp % 10);
-		tmp = (tmp - *NumCharPointer)/10;
+		tmp = (tmp - *NumCharPointer) / 10;
 	}
 }
 
@@ -136,7 +52,7 @@ void
 ConcatCharArrays(char *SourceA, char *SourceB, char *Destination)
 {
 	int32 SourceALength = StringLength(SourceA);
-	int32 SourceBLength = StringLength(SourceB);	
+	int32 SourceBLength = StringLength(SourceB);
 
 	for (int32 Index = 0;
 	     Index < SourceALength;
@@ -155,7 +71,7 @@ ConcatCharArrays(char *SourceA, char *SourceB, char *Destination)
 	*Destination++ = 0;
 }
 
-void 
+void
 DebugLine(int64 *Output)
 {
 	char NumChar[MAX_PATH] = {};
@@ -166,13 +82,13 @@ DebugLine(int64 *Output)
 	OutputDebugString(FinalOutput);
 }
 
-void 
+void
 DebugLine(int64 Output)
 {
 	DebugLine(&Output);
 }
 
-void 
+void
 DebugLine(char *Output)
 {
 	char FinalOutput[MAX_PATH] = {};
@@ -181,7 +97,7 @@ DebugLine(char *Output)
 }
 
 void
-ConcatIntChar(int64 IntInput, char *CharInput, 
+ConcatIntChar(int64 IntInput, char *CharInput,
               char *CharOutput)
 {
 	char IntInputAsChar[MAX_PATH] = {};
@@ -190,7 +106,7 @@ ConcatIntChar(int64 IntInput, char *CharInput,
 }
 
 void
-ConcatIntChar(char *CharInput, int64 IntInput, 
+ConcatIntChar(char *CharInput, int64 IntInput,
               char *CharOutput)
 {
 	char IntInputAsChar[MAX_PATH] = {};
@@ -198,24 +114,25 @@ ConcatIntChar(char *CharInput, int64 IntInput,
 	ConcatCharArrays(IntInputAsChar, CharInput, CharOutput);
 }
 
-float
+real64
 CheckStickDeadzone(short Value, SHORT DeadZoneThreshold)
 {
-	float Result = 0;
+	real64 Result = 0;
 
 	if (Value < -DeadZoneThreshold)
 	{
-		Result = (float)(Value + DeadZoneThreshold) / (32768.0f - DeadZoneThreshold);
+		Result = (real64)(Value + DeadZoneThreshold) / (32768.0f - DeadZoneThreshold);
 	}
 	else if (Value > DeadZoneThreshold)
 	{
-		Result = (float)(Value  + DeadZoneThreshold) / (32767.0f - DeadZoneThreshold);
+		// this explicit number is pulled from my ass.
+		Result = (real64)(Value  + DeadZoneThreshold) / (47467.0f - DeadZoneThreshold);
 	}
 
 	return (Result);
 }
 
-void 
+void
 UpdateScreenSize(HWND WindowHandle)
 {
 	RECT WindowRect;
@@ -241,15 +158,55 @@ DrawPixels(HWND WindowHandle)
 	              0, 0, ScreenBuffer.Width, ScreenBuffer.Height,
 	              0, 0, ScreenBuffer.Width, ScreenBuffer.Height,
 	              ScreenBuffer.ScreenBuffer, &BitMapInfo,
-	              DIB_RGB_COLORS, 
+	              DIB_RGB_COLORS,
 	              SRCCOPY);
 
 	ReleaseDC(WindowHandle, DeviceContext);
 }
 
-LRESULT CALLBACK 
+struct win32_game_code
+{
+	HMODULE GameCodeDLL;
+	game_update_and_render *UpdateAndRender;
+
+	bool32 IsValid;
+};
+
+win32_game_code
+LoadGameCode()
+{
+	win32_game_code Result = {};
+
+	CopyFile("OriginTower.dll", "OriginTower_temp.dll", FALSE);
+	Result.GameCodeDLL = LoadLibraryA("OriginTower_temp.dll");
+	if (Result.GameCodeDLL)
+	{
+		Result.UpdateAndRender = (game_update_and_render *)GetProcAddress(Result.GameCodeDLL, "GameUpdateAndRender");
+	}
+
+	// NOTE this is the wrong way to set is valid. we don't actually know it is valid.
+	Result.IsValid = true;
+
+	return (Result);
+}
+
+void
+UnloadGameCode(win32_game_code *GameCode)
+{
+	if (GameCode->GameCodeDLL)
+	{
+		FreeLibrary(GameCode->GameCodeDLL);
+	}
+
+	GameCode->IsValid = false;
+	GameCode->UpdateAndRender = GameUpdateAndRenderStub;
+}
+
+
+LRESULT CALLBACK
 WindowProcedure(HWND WindowHandle, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	// test
 	LRESULT Result;
 
 	switch (uMsg)
@@ -275,94 +232,56 @@ WindowProcedure(HWND WindowHandle, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 
 	Result = DefWindowProc(WindowHandle, uMsg, wParam, lParam);
-	return(Result);
+	return (Result);
 }
 
-void 
-DrawSquare(int32 XPos, int32 YPos, uint32 squareSize, color Color)
+inline LARGE_INTEGER
+GetWallClock()
 {
-	int32 MinX = XPos;
-	int32 MinY = YPos;
-	int32 MaxX = XPos + squareSize;
-	int32 MaxY = YPos + squareSize;
-
-	if (MinX < 0)
-	{
-		MinX = 0;
-	}
-	if (MinY < 0)
-	{
-		MinY = 0;
-	}
-	if (MaxX > (int32)ScreenBuffer.Width)
-	{
-		MaxX = (int32)ScreenBuffer.Width;
-	}
-	if (MaxY > (int32)ScreenBuffer.Height)
-	{
-		MaxY = (int32)ScreenBuffer.Height;
-	}
-
-	uint32 Pitch = ScreenBuffer.Width * ScreenBuffer.BytesPerPixel;
-	uint8 *Row = (uint8 *)ScreenBuffer.ScreenBuffer + ((MinX * ScreenBuffer.BytesPerPixel) + (MinY * Pitch));
-	for (int32 Y = MinY;
-	     Y < MaxY;
-	     ++Y)
-	{
-		uint8 *Pixel = (uint8 *)Row;
-		for (int32 X = MinX;
-		     X < MaxX;
-		     ++X)
-		{
-			// B
-			*Pixel = Color.B;
-			++Pixel;
-
-			// G
-			*Pixel = Color.G;
-			++Pixel;
-
-			// R
-			*Pixel = Color.R;
-			++Pixel;
-
-			// A?
-			*Pixel = Color.A;
-			++Pixel;
-		}
-		Row += Pitch;
-	}
+	LARGE_INTEGER Count;
+	QueryPerformanceCounter(&Count);
+	return (Count);
 }
 
-int CALLBACK 
+int CALLBACK
 WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowCode)
 {
 	WNDCLASS WindowClass = {};
-	WindowClass.style = CS_HREDRAW|CS_VREDRAW;
+	WindowClass.style = CS_HREDRAW | CS_VREDRAW;
 	WindowClass.lpfnWndProc = WindowProcedure;
 	WindowClass.hInstance = Instance;
 	WindowClass.lpszClassName = "OriginTowerWindowClass";
 
-	if(RegisterClass(&WindowClass))
+	if (RegisterClass(&WindowClass))
 	{
-		HWND WindowHandle = 
-		CreateWindowEx(
-		               0,
-		               WindowClass.lpszClassName,
-		               "Origin Tower",
-		               WS_OVERLAPPEDWINDOW|WS_VISIBLE,
-		               CW_USEDEFAULT,
-		               CW_USEDEFAULT,
-		               CW_USEDEFAULT,
-		               CW_USEDEFAULT,
-		               0,
-		               0,
-		               Instance,
-		               0);
+		HWND WindowHandle =
+		    CreateWindowEx(
+		        0,
+		        WindowClass.lpszClassName,
+		        "Origin Tower",
+		        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+		        CW_USEDEFAULT,
+		        CW_USEDEFAULT,
+		        CW_USEDEFAULT,
+		        CW_USEDEFAULT,
+		        0,
+		        0,
+		        Instance,
+		        0);
 		if (WindowHandle)
 		{
 
-			controller Controller = {};
+
+			LARGE_INTEGER FrequencyLong;
+			QueryPerformanceFrequency(&FrequencyLong);
+			PerfCountFrequency = FrequencyLong.QuadPart;
+
+			// Probably need to get this from hardware instead of pulling a number out of my ass
+			int32 MonitorUpdateHz = 60;
+			int32 GameUpdateHz = 60;
+			real64 TargetSecondsElapsedPerFrame = 1.0f / (real64)GameUpdateHz;
+
+			game_input GameInput = {};
 
 			ScreenBuffer = {};
 			ScreenBuffer.BackgroundColor.R = 0;
@@ -381,7 +300,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 				for (uint32 X = 0;
 				     X < ScreenBuffer.Width;
 				     ++X)
-				{	
+				{
 					// B
 					*Pixel = ScreenBuffer.BackgroundColor.B;
 					++Pixel;
@@ -402,32 +321,34 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 				uint32 Pitch = ScreenBuffer.Width * ScreenBuffer.BytesPerPixel;
 				Row += Pitch;
 			}
-
-			if (ScreenBuffer.ScreenBuffer == NULL)
-			{
-				DebugLine("Pixel Data no initialized correctly.");
-				Assert(0);
-			}
+			Assert(ScreenBuffer.ScreenBuffer !=  NULL);
 
 
-			player Player = {};
-			Player.PosX = (float)(ScreenBuffer.Width / 2);
-			Player.PosY = (float)(ScreenBuffer.Height / 2);
-			Player.Width = 50;
-			Player.Color.R = 255;
-			Player.Color.G = 100;
-			Player.Color.B = 100;
+			#if INTERNAL
+			LPVOID BaseAddress = (LPVOID)Terrabytes((uint64)2);
+			#else
+			LPVOID BaseAddress = 0;
+			#endif
+			game_memory GameMemory = {};
+			GameMemory.PermanentStorageSize = Megabytes(64);
+			GameMemory.TransientStorageSize = Gigabytes((uint64)4);
+			uint64 TotalSize = GameMemory.PermanentStorageSize + GameMemory.TransientStorageSize;
+
+			GameMemory.PermanentStorage = VirtualAlloc(BaseAddress, TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+			GameMemory.TransientStorage = (uint8 *)GameMemory.PermanentStorage + GameMemory.PermanentStorageSize;
+
+			LARGE_INTEGER PreviousFrameCount = GetWallClock();
 
 
-			LARGE_INTEGER PreviousFrameCount;
-			QueryPerformanceCounter(&PreviousFrameCount);
+			win32_game_code GameCode = LoadGameCode();
+			uint32 LoadCounter = 0;
 
 			while (GlobalRunning)
 			{
 				MSG Message;
 				while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
 				{
-					switch(Message.message)
+					switch (Message.message)
 					{
 						default:
 						{
@@ -437,9 +358,17 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 					}
 				}
 
-				DWORD dwResult;    
-				for (DWORD ControllerIndex = 0; 
-				     ControllerIndex < XUSER_MAX_COUNT; 
+				LoadCounter++;
+				if (LoadCounter > 60)
+				{
+					UnloadGameCode(&GameCode);
+					GameCode = LoadGameCode();
+					LoadCounter = 0;
+				}
+
+				DWORD dwResult;
+				for (DWORD ControllerIndex = 0;
+				     ControllerIndex < XUSER_MAX_COUNT;
 				     ControllerIndex++)
 				{
 					XINPUT_STATE ControllerState;
@@ -447,42 +376,56 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 
 					dwResult = XInputGetState(ControllerIndex, &ControllerState);
 
-					if(dwResult == ERROR_SUCCESS)
+					if (dwResult == ERROR_SUCCESS)
 					{
 						XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
 
-						Controller.AButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_A);
-						Controller.BButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_B);
-						Controller.XButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_X);
-						Controller.YButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_Y);
+						GameInput.AButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_A);
+						GameInput.BButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_B);
+						GameInput.XButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_X);
+						GameInput.YButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_Y);
 
-						Controller.DUp = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
-						Controller.DDown = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
-						Controller.DLeft = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
-						Controller.DRight = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+						GameInput.DUp = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
+						GameInput.DDown = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+						GameInput.DLeft = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
+						GameInput.DRight = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
 
-						Controller.LeftStickX = CheckStickDeadzone(Pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-						Controller.LeftStickY = CheckStickDeadzone(Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+						GameInput.LeftStick.X = ClampValue(-0.9f, 0.9f, CheckStickDeadzone(Pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE));
+						GameInput.LeftStick.Y = ClampValue(-0.9f, 0.9f, CheckStickDeadzone(Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)) * -1;
 
 					}
 					else
 					{
-            				// Controller is not connected 
+						// Controller is not connected
 					}
 				}
 
-
-				DrawSquare((uint32)Player.PosX, (uint32)Player.PosY, Player.Width, ScreenBuffer.BackgroundColor);
-				Player.PosX += Controller.LeftStickX;
-				Player.PosY -= Controller.LeftStickY;
-				DrawSquare((uint32)Player.PosX, (uint32)Player.PosY, Player.Width, Player.Color);
+				GameCode.UpdateAndRender(&GameMemory, &GameInput, &ScreenBuffer);
 
 				DrawPixels(WindowHandle);
 
-				LARGE_INTEGER NewFrameCount;
-				QueryPerformanceCounter(&NewFrameCount);
-				int64 ElapsedFrameCount = NewFrameCount.QuadPart - PreviousFrameCount.QuadPart;
-				PreviousFrameCount = NewFrameCount;
+				LARGE_INTEGER WorkFrameCount = GetWallClock();
+				ElapsedFrameCount = WorkFrameCount.QuadPart - PreviousFrameCount.QuadPart;
+
+				real64 SecondsElapsedForWork = (real64)ElapsedFrameCount / (real64)PerfCountFrequency;
+				real64 SecondsElapsedForFrame = SecondsElapsedForWork;
+				while (SecondsElapsedForFrame < TargetSecondsElapsedPerFrame)
+				{
+					LARGE_INTEGER NewWorkFrameCount = GetWallClock();
+					SecondsElapsedForFrame = (((real64)NewWorkFrameCount.QuadPart - PreviousFrameCount.QuadPart) /
+					                          (real64)PerfCountFrequency);
+				}
+
+				WorkFrameCount = GetWallClock();
+
+				ElapsedFrameCount = WorkFrameCount.QuadPart - PreviousFrameCount.QuadPart;
+				int64 MSThisFrame = (1000 * ElapsedFrameCount) / PerfCountFrequency;
+				int64 FPS = PerfCountFrequency / ElapsedFrameCount;
+				char charFPS[MAX_PATH] = {};
+				ConcatIntChar(FPS, " FPS", charFPS);
+				DebugLine(charFPS);
+
+				PreviousFrameCount = WorkFrameCount;
 			}
 		}
 	}
