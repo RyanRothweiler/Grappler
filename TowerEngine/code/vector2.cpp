@@ -20,6 +20,14 @@ vector2 operator+(real64 B, vector2 A)
 	return (Output);
 }
 
+vector2 operator-(vector2 A, vector2 B)
+{
+	vector2 Output;
+	Output.X = A.X - B.X;
+	Output.Y = A.Y - B.Y;
+	return (Output);
+}
+
 vector2 operator/(vector2 A, int B)
 {
 	vector2 Output;
@@ -80,3 +88,5 @@ NormalizeVector2(vector2 Input)
 
 	return (Output);
 }
+
+const vector2 Vector2Zero = vector2{0, 0};

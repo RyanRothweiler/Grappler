@@ -1,10 +1,24 @@
+bool PRINTFPS = false;
 
 #include "OriginTower.h"
+
 
 bool GlobalRunning = true;
 screen_buffer ScreenBuffer;
 int64 ElapsedFrameCount;
 int64 PerfCountFrequency;
+
+
+struct input_recording
+{
+	HANDLE RecordingFileHandle;
+	uint32 RecordingIndex;
+
+	HANDLE PlayingFileHandle;
+	uint32 PlayingIndex;
+
+	char *FileName = "OriginTower.tir";
+};
 
 int32
 StringLength(char *String)
@@ -133,12 +147,98 @@ CheckStickDeadzone(short Value, SHORT DeadZoneThreshold)
 }
 
 void
+FillPixels(screen_buffer *ScreenBuffer)
+{
+	uint8 *Row = (uint8 *)ScreenBuffer->ScreenBuffer;
+	for (uint32 Y = 0;
+	     Y < ScreenBuffer->Height;
+	     ++Y)
+	{
+		uint8 *Pixel = (uint8 *)Row;
+		for (uint32 X = 0;
+		     X < ScreenBuffer->Width;
+		     ++X)
+		{
+			// B
+			*Pixel = ScreenBuffer->BackgroundColor.B;
+			++Pixel;
+
+			// G
+			*Pixel = ScreenBuffer->BackgroundColor.G;
+			++Pixel;
+
+			// R
+			*Pixel = ScreenBuffer->BackgroundColor.R;
+			++Pixel;
+
+			// A?
+			*Pixel = ScreenBuffer->BackgroundColor.A;
+			++Pixel;
+
+		}
+		uint32 Pitch = ScreenBuffer->Width * ScreenBuffer->BytesPerPixel;
+		Row += Pitch;
+	}
+}
+
+void
+ProcessButtonInput(input_button *ButtonProcessing, bool32 NewState)
+{
+	if (NewState)
+	{
+		if (ButtonProcessing->IsDown)
+		{
+			ButtonProcessing->OnDown = false;
+		}
+		else
+		{
+			ButtonProcessing->IsDown = true;
+			ButtonProcessing->OnDown = true;
+			ButtonProcessing->IsUp = false;
+			ButtonProcessing->OnUp = false;
+		}
+
+	}
+	else
+	{
+		if (ButtonProcessing->IsUp)
+		{
+			ButtonProcessing->OnUp = false;
+		}
+		else
+		{
+			ButtonProcessing->IsUp = true;
+			ButtonProcessing->OnUp = true;
+			ButtonProcessing->IsDown = false;
+			ButtonProcessing->OnDown = false;
+		}
+	}
+}
+
+void
+ProcessTriggerInput(input_button *Trigger, int32 TriggerValue)
+{
+	if (TriggerValue > 200)
+	{
+		ProcessButtonInput(Trigger, true);
+	}
+	else
+	{
+		ProcessButtonInput(Trigger, false);
+	}
+}
+
+
+void
 UpdateScreenSize(HWND WindowHandle)
 {
 	RECT WindowRect;
 	GetWindowRect(WindowHandle, &WindowRect);
 	ScreenBuffer.Width = WindowRect.right - WindowRect.left;
 	ScreenBuffer.Height = WindowRect.bottom - WindowRect.top;
+
+	uint32 MemSize = ScreenBuffer.Width * ScreenBuffer.Height * ScreenBuffer.BytesPerPixel;
+	ScreenBuffer.ScreenBuffer =  VirtualAlloc(0, MemSize, MEM_COMMIT, PAGE_READWRITE);
 }
 
 void
@@ -218,7 +318,11 @@ WindowProcedure(HWND WindowHandle, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_SIZE:
 		{
 			UpdateScreenSize(WindowHandle);
-			DrawPixels(WindowHandle);
+			// if (GlobalRunning)
+			// {
+			// 	FillPixels(&ScreenBuffer);
+			// 	DebugLine("going");
+			// }
 		} break;
 
 		case WM_CLOSE:
@@ -241,6 +345,33 @@ GetWallClock()
 	LARGE_INTEGER Count;
 	QueryPerformanceCounter(&Count);
 	return (Count);
+}
+
+void
+SaveSate(char *FileName, game_memory *GameMemory)
+{
+	DebugLine("Saving State");
+
+	HANDLE FileHandle = CreateFileA(FileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
+	// NOTE if totalsize if greater than 4gb then we must write a for loop to loop over the write file.
+	DWORD BytesWritten = {};
+	bool32 Success = WriteFile(FileHandle, GameMemory->GameMemoryBlock, (DWORD)GameMemory->TotalSize, &BytesWritten, 0);
+
+	Assert(Success)
+	CloseHandle(FileHandle);
+
+	DebugLine("Save Complete");
+}
+
+void
+LoadState(char *FileName, game_memory *GameMemory)
+{
+	HANDLE FileHandle = CreateFileA(FileName, GENERIC_READ,  0, 0, OPEN_EXISTING, 0, 0);
+	DWORD BytesRead;
+	bool32 Success = ReadFile(FileHandle, GameMemory->GameMemoryBlock, (DWORD)GameMemory->TotalSize, &BytesRead, 0);
+
+	Assert(Success);
+	CloseHandle(FileHandle);
 }
 
 int CALLBACK
@@ -270,8 +401,6 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 		        0);
 		if (WindowHandle)
 		{
-
-
 			LARGE_INTEGER FrequencyLong;
 			QueryPerformanceFrequency(&FrequencyLong);
 			PerfCountFrequency = FrequencyLong.QuadPart;
@@ -289,38 +418,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 			ScreenBuffer.BackgroundColor.B = 0;
 			UpdateScreenSize(WindowHandle);
 
-			uint32 MemSize = ScreenBuffer.Width * ScreenBuffer.Height * ScreenBuffer.BytesPerPixel;
-			ScreenBuffer.ScreenBuffer =  VirtualAlloc(0, MemSize, MEM_COMMIT, PAGE_READWRITE);
-			uint8 *Row = (uint8 *)ScreenBuffer.ScreenBuffer;
-			for (uint32 Y = 0;
-			     Y < ScreenBuffer.Height;
-			     ++Y)
-			{
-				uint8 *Pixel = (uint8 *)Row;
-				for (uint32 X = 0;
-				     X < ScreenBuffer.Width;
-				     ++X)
-				{
-					// B
-					*Pixel = ScreenBuffer.BackgroundColor.B;
-					++Pixel;
-
-					// G
-					*Pixel = ScreenBuffer.BackgroundColor.G;
-					++Pixel;
-
-					// R
-					*Pixel = ScreenBuffer.BackgroundColor.R;
-					++Pixel;
-
-					// A?
-					*Pixel = ScreenBuffer.BackgroundColor.A;
-					++Pixel;
-
-				}
-				uint32 Pitch = ScreenBuffer.Width * ScreenBuffer.BytesPerPixel;
-				Row += Pitch;
-			}
+			FillPixels(&ScreenBuffer);
 			Assert(ScreenBuffer.ScreenBuffer !=  NULL);
 
 
@@ -331,10 +429,11 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 			#endif
 			game_memory GameMemory = {};
 			GameMemory.PermanentStorageSize = Megabytes(64);
-			GameMemory.TransientStorageSize = Gigabytes((uint64)4);
-			uint64 TotalSize = GameMemory.PermanentStorageSize + GameMemory.TransientStorageSize;
+			GameMemory.TransientStorageSize = Megabytes((uint64)1);
+			GameMemory.TotalSize = GameMemory.PermanentStorageSize + GameMemory.TransientStorageSize;
 
-			GameMemory.PermanentStorage = VirtualAlloc(BaseAddress, TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+			GameMemory.GameMemoryBlock = VirtualAlloc(BaseAddress, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+			GameMemory.PermanentStorage = GameMemory.GameMemoryBlock;
 			GameMemory.TransientStorage = (uint8 *)GameMemory.PermanentStorage + GameMemory.PermanentStorageSize;
 
 			LARGE_INTEGER PreviousFrameCount = GetWallClock();
@@ -342,6 +441,14 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 
 			win32_game_code GameCode = LoadGameCode();
 			uint32 LoadCounter = 0;
+
+			/*
+			NOTE indexes for input recording.
+			R1 - 0
+			R2 - 1
+			L1 - 3
+			L2 - 4
+			*/
 
 			while (GlobalRunning)
 			{
@@ -380,15 +487,23 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 					{
 						XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
 
-						GameInput.AButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_A);
-						GameInput.BButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_B);
-						GameInput.XButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_X);
-						GameInput.YButtonDown = (Pad->wButtons & XINPUT_GAMEPAD_Y);
+						ProcessButtonInput(&GameInput.AButton, Pad->wButtons & XINPUT_GAMEPAD_A);
+						ProcessButtonInput(&GameInput.BButton, Pad->wButtons & XINPUT_GAMEPAD_B);
+						ProcessButtonInput(&GameInput.XButton, Pad->wButtons & XINPUT_GAMEPAD_X);
+						ProcessButtonInput(&GameInput.YButton, Pad->wButtons & XINPUT_GAMEPAD_Y);
 
-						GameInput.DUp = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
-						GameInput.DDown = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
-						GameInput.DLeft = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
-						GameInput.DRight = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+						ProcessButtonInput(&GameInput.DUp, Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
+						ProcessButtonInput(&GameInput.DDown, Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+						ProcessButtonInput(&GameInput.DLeft, Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
+						ProcessButtonInput(&GameInput.DRight, Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+
+						ProcessButtonInput(&GameInput.R1, Pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
+						ProcessButtonInput(&GameInput.L1, Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
+						ProcessTriggerInput(&GameInput.R2, Pad->bRightTrigger);
+						ProcessTriggerInput(&GameInput.L2, Pad->bLeftTrigger);
+
+						ProcessButtonInput(&GameInput.Start, Pad->wButtons & XINPUT_GAMEPAD_START);
+						ProcessButtonInput(&GameInput.Select, Pad->wButtons & XINPUT_GAMEPAD_BACK);
 
 						GameInput.LeftStick.X = ClampValue(-0.9f, 0.9f, CheckStickDeadzone(Pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE));
 						GameInput.LeftStick.Y = ClampValue(-0.9f, 0.9f, CheckStickDeadzone(Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)) * -1;
@@ -398,6 +513,51 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 					{
 						// Controller is not connected
 					}
+				}
+
+
+				char *Slot1Name = "StateSlot1.ss";
+				char *Slot2Name = "StateSlot2.ss";
+				char *Slot3Name = "StateSlot3.ss";
+				char *Slot4Name = "StateSlot4.ss";
+				if (GameInput.R1.OnDown && GameInput.Select.IsDown)
+				{
+					SaveSate(Slot1Name, &GameMemory);
+				}
+				if (GameInput.R1.OnDown && !GameInput.Select.IsDown)
+				{
+					LoadState(Slot1Name, &GameMemory);
+					FillPixels(&ScreenBuffer);
+				}
+
+				if (GameInput.L1.OnDown && GameInput.Select.IsDown)
+				{
+					SaveSate(Slot2Name, &GameMemory);
+				}
+				if (GameInput.L1.OnDown && !GameInput.Select.IsDown)
+				{
+					LoadState(Slot2Name, &GameMemory);
+					FillPixels(&ScreenBuffer);
+				}
+
+				if (GameInput.R2.OnDown && GameInput.Select.IsDown)
+				{
+					SaveSate(Slot3Name, &GameMemory);
+				}
+				if (GameInput.R2.OnDown && !GameInput.Select.IsDown)
+				{
+					LoadState(Slot3Name, &GameMemory);
+					FillPixels(&ScreenBuffer);
+				}
+
+				if (GameInput.L2.OnDown && GameInput.Select.IsDown)
+				{
+					SaveSate(Slot4Name, &GameMemory);
+				}
+				if (GameInput.L2.OnDown && !GameInput.Select.IsDown)
+				{
+					LoadState(Slot4Name, &GameMemory);
+					FillPixels(&ScreenBuffer);
 				}
 
 				GameCode.UpdateAndRender(&GameMemory, &GameInput, &ScreenBuffer);
@@ -423,9 +583,13 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 				int64 FPS = PerfCountFrequency / ElapsedFrameCount;
 				char charFPS[MAX_PATH] = {};
 				ConcatIntChar(FPS, " FPS", charFPS);
-				DebugLine(charFPS);
+				if (PRINTFPS)
+				{
+					DebugLine(charFPS);
+				}
 
 				PreviousFrameCount = WorkFrameCount;
+				GameMemory.ElapsedCycles = PreviousFrameCount.QuadPart;
 			}
 		}
 	}

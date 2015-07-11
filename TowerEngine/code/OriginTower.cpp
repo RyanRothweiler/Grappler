@@ -1,5 +1,5 @@
-#include "OriginTower.h"
 
+#include "OriginTower.h"
 
 void
 DrawSquare(int32 XPos, int32 YPos, uint32 squareSize, color Color,
@@ -58,6 +58,14 @@ DrawSquare(int32 XPos, int32 YPos, uint32 squareSize, color Color,
 	}
 }
 
+void
+VectorForceEntity(active_entity *Entity, vector2 InputForce)
+{
+	InputForce = (InputForce * Entity->MovementSpeed) + (-0.25f * Entity->DeltaPosition);
+	// NOTE these 0.9f here should actually be the previous elapsed frame time. Maybe do that at some point
+	Entity->Position = (0.5f * InputForce * SquareInt((int64)(0.9f))) + (Entity->DeltaPosition * 0.9f) + Entity->Position;
+	Entity->DeltaPosition = (InputForce * 0.9f) + Entity->DeltaPosition;
+}
 
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
@@ -65,40 +73,43 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
 	if (!Memory->IsInitialized)
 	{
-		GameState->Wall.Position.X = 20;
-		GameState->Wall.Position.Y = 20;
-		GameState->Wall.Width = 10;
-		// GameState->Wall.Color = COLOR_WHITE;
+		GameState->Player.Entity.Position.X = (real64)(ScreenBuffer->Width / 2);
+		GameState->Player.Entity.Position.Y = (real64)(ScreenBuffer->Height / 2);
+		GameState->Player.Entity.Width = 50;
+		GameState->Player.Entity.Color.R = 255;
+		GameState->Player.Entity.Color.G = 100;
+		GameState->Player.Entity.Color.B = 100;
+		GameState->Player.Entity.MovementSpeed = 3;
 
-		GameState->Player.Position.X = (real64)(ScreenBuffer->Width / 2);
-		GameState->Player.Position.Y = (real64)(ScreenBuffer->Height / 2);
-		GameState->Player.Width = 50;
-		GameState->Player.Color.R = 255;
-		GameState->Player.Color.G = 100;
-		GameState->Player.Color.B = 100;
-		GameState->Player.Speed = 3;
+		GameState->Enemy.Position.X = (real64)(ScreenBuffer->Width / 2);
+		GameState->Enemy.Position.Y = (real64)(ScreenBuffer->Height / 2);
+		GameState->Enemy.Width = 50;
+		GameState->Enemy.Color.R = 0;
+		GameState->Enemy.Color.G = 150;
+		GameState->Enemy.Color.B = 150;
+		GameState->Enemy.MovementSpeed = 1;
 
 		Memory->IsInitialized = true;
 	}
 
 	player *Player = &GameState->Player;
-	wall *Wall = &GameState->Wall;
+	active_entity *Enemy = &GameState->Enemy;
 
-	// GameState->Player.Color.R = 0;
-	// GameState->Player.Width = 1;
 
-	DrawSquare((uint32)Player->Position.X, (uint32)Player->Position.Y, Player->Width, ScreenBuffer->BackgroundColor, *ScreenBuffer);
-	vector2 InputForce = NormalizeVector2(GameInput->LeftStick) * Player->Speed;
-	InputForce = InputForce + (-0.25f * Player->DeltaPlayerPosition);
-	// NOTE these 0.9f here should actually be the previous elapsed frame time. Maybe do that at some point
-	Player->Position = (0.5f * InputForce * SquareInt((int64)(0.9f))) + (Player->DeltaPlayerPosition * 0.9f) + Player->Position;
-	Player->DeltaPlayerPosition = (InputForce * 0.9f) + Player->DeltaPlayerPosition;
-	DrawSquare((uint32)Player->Position.X, (uint32)Player->Position.Y, Player->Width, Player->Color, *ScreenBuffer);
+	DrawSquare((uint32)Enemy->Position.X, (uint32)Enemy->Position.Y, Enemy->Width, ScreenBuffer->BackgroundColor, *ScreenBuffer);
+	DrawSquare((uint32)Player->Entity.Position.X, (uint32)Player->Entity.Position.Y, Player->Entity.Width, ScreenBuffer->BackgroundColor, *ScreenBuffer);
 
-	DrawSquare((uint32)Wall->Position.X, (uint32)Wall->Position.Y, Wall->Width, Wall->Color, *ScreenBuffer);
-
-	if (GameInput->DUp)
+	vector2 DirectionPos = {};
+	if (GameInput->YButton.IsDown)
 	{
-		Assert(0);
+		DirectionPos = Enemy->Position - Player->Entity.Position;
+		DirectionPos = -1 * NormalizeVector2(DirectionPos);
 	}
+	VectorForceEntity(Enemy, DirectionPos);
+
+	VectorForceEntity(&Player->Entity, NormalizeVector2(GameInput->LeftStick));
+
+	DrawSquare((uint32)Player->Entity.Position.X, (uint32)Player->Entity.Position.Y, Player->Entity.Width, Player->Entity.Color, *ScreenBuffer);
+	DrawSquare((uint32)Enemy->Position.X, (uint32)Enemy->Position.Y, Enemy->Width, Enemy->Color, *ScreenBuffer);
+
 }

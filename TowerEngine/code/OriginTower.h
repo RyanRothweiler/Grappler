@@ -56,11 +56,6 @@ struct color
 	uint8 A;
 };
 
-// color COLOR_WHITE = {};
-// COLOR_WHITE.R = 255;
-// COLOR_WHITE.B = 255;
-// COLOR_WHITE.G = 255;
-
 struct screen_buffer
 {
 	DWORD Width;
@@ -72,43 +67,60 @@ struct screen_buffer
 	color BackgroundColor;
 };
 
-struct wall
+struct active_entity
 {
 	vector2 Position;
+	vector2 DeltaPosition;
+
 	uint16 Width;
 	color Color;
+	real32 MovementSpeed;
 };
 
 struct player
 {
-	vector2 Position;
-	vector2 DeltaPlayerPosition;
+	active_entity Entity;
+};
 
-	uint16 Width;
-	color Color;
-	real32 Speed;
+struct input_button
+{
+	bool32 OnDown;
+	bool32 OnUp;
+	bool32 IsDown;
+	bool32 IsUp;
 };
 
 struct game_input
 {
-	bool32 AButtonDown;
-	bool32 BButtonDown;
-	bool32 XButtonDown;
-	bool32 YButtonDown;
+	input_button AButton;
+	input_button BButton;
+	input_button XButton;
+	input_button YButton;
 
-	bool32 DUp;
-	bool32 DRight;
-	bool32 DLeft;
-	bool32 DDown;
+	input_button DUp;
+	input_button DRight;
+	input_button DLeft;
+	input_button DDown;
 
+	input_button R1;
+	input_button R2;
+	input_button L1;
+	input_button L2;
+
+	input_button Select;
+	input_button Start;
 
 	vector2 LeftStick;
+	bool32 LeftStickButton;
+
+	bool32 RightStickButton;
 };
 
 struct game_state
 {
 	player Player;
-	wall Wall;
+	active_entity Enemy;
+
 };
 
 struct game_memory
@@ -119,6 +131,11 @@ struct game_memory
 	void *PermanentStorage; // NOTE Required to be cleared to 0 on startup / allocation
 	uint64 TransientStorageSize;
 	void *TransientStorage;
+
+	uint64 TotalSize;
+	void *GameMemoryBlock;
+	
+	int64 ElapsedCycles;
 };
 
 
