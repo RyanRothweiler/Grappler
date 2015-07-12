@@ -67,7 +67,7 @@ VectorForceEntity(active_entity *Entity, vector2 InputForce)
 	Entity->DeltaPosition = (InputForce * 0.9f) + Entity->DeltaPosition;
 }
 
-extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
+extern "C" GAME_LOOP(GameLoop)
 {
 	Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
@@ -85,12 +85,29 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Enemy.Color = COLORGREEN;
 		GameState->Enemy.MovementSpeed = 1;
 
+		AudioBuffer->RunningSampleIndex = 0;
+
 		Memory->IsInitialized = true;
 	}
 
 	player *Player = &GameState->Player;
 	active_entity *Enemy = &GameState->Enemy;
 
+	int16 ToneVolume = 3000;
+	int32 ToneHz = 400;
+	int WavePeriod = AudioBuffer->SamplesPerSecond / ToneHz;
+	int HalfSquareWavePeriod = WavePeriod / 2;
+
+	int16 *SampleOut = AudioBuffer->Samples;
+	for (int SampleIndex = 0;
+	     SampleIndex < AudioBuffer->SampleCount;
+	     ++SampleIndex)
+	{
+		int16 SampleValue = ((AudioBuffer->RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? (int16)(ToneVolume * 10000) : (int16)(-ToneVolume * 10000);
+		// int16 SampleValue = 0;
+		*SampleOut++ = SampleValue;
+		*SampleOut++ = SampleValue;
+	}
 
 	DrawSquare((uint32)Enemy->Position.X, (uint32)Enemy->Position.Y, Enemy->Width, ScreenBuffer->BackgroundColor, *ScreenBuffer);
 	DrawSquare((uint32)Player->Entity.Position.X, (uint32)Player->Entity.Position.Y, Player->Entity.Width, ScreenBuffer->BackgroundColor, *ScreenBuffer);
@@ -107,5 +124,4 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	DrawSquare((uint32)Player->Entity.Position.X, (uint32)Player->Entity.Position.Y, Player->Entity.Width, Player->Entity.Color, *ScreenBuffer);
 	DrawSquare((uint32)Enemy->Position.X, (uint32)Enemy->Position.Y, Enemy->Width, Enemy->Color, *ScreenBuffer);
-
 }

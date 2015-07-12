@@ -117,6 +117,30 @@ struct game_state
 
 };
 
+struct win32_audio_output
+{
+	int SamplesPerSecond;
+	int ToneHz;
+	int SquareWavePeriod;
+	int BytesPerSample;
+	int SecondaryBufferSize;
+	real32 ToneVolume;
+	int HalfSquareWavePeriod;
+	uint32 RunningSampleIndex;
+	DWORD SafetyBytes;
+};
+
+struct game_audio_output_buffer
+{
+	// NOTE this running sample index is only for creating the sinwave. We don't need this otherwise. Remove this eventually.
+	uint32 RunningSampleIndex;
+
+	int SamplesPerSecond;
+	int SampleCount;
+	int16 *Samples;
+};
+
+
 struct game_memory
 {
 	bool32 IsInitialized;
@@ -128,13 +152,14 @@ struct game_memory
 
 	uint64 TotalSize;
 	void *GameMemoryBlock;
-	
+
 	int64 ElapsedCycles;
 };
 
 
-#define GAME_UPDATE_AND_RENDER(name) void name(game_memory *Memory, game_input *GameInput, screen_buffer *ScreenBuffer)
-typedef GAME_UPDATE_AND_RENDER(game_update_and_render);
-GAME_UPDATE_AND_RENDER(GameUpdateAndRenderStub)
+
+#define GAME_LOOP(name) void name(game_memory *Memory, game_input *GameInput, screen_buffer *ScreenBuffer, game_audio_output_buffer *AudioBuffer)
+typedef GAME_LOOP(game_update_and_render);
+GAME_LOOP(GameLoopStub)
 {
 }
