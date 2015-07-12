@@ -89,4 +89,4 @@ NormalizeVector2(vector2 Input)
 	return (Output);
 }
 
-const vector2 Vector2Zero = vector2{0, 0};
+const vector2 VECTOR2ZERO = vector2{0, 0};

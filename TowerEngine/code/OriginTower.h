@@ -1,6 +1,7 @@
 
 #include <windows.h>
 #include <xinput.h>
+#include <dsound.h>
 
 
 #define internal static
@@ -47,14 +48,7 @@ typedef double real64;
 
 #include "Math.cpp"
 #include "vector2.cpp"
-
-struct color
-{
-	uint8 R;
-	uint8 G;
-	uint8 B;
-	uint8 A;
-};
+#include "Color.h"
 
 struct screen_buffer
 {

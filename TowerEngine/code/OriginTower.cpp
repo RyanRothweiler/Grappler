@@ -73,20 +73,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
 	if (!Memory->IsInitialized)
 	{
-		GameState->Player.Entity.Position.X = (real64)(ScreenBuffer->Width / 2);
-		GameState->Player.Entity.Position.Y = (real64)(ScreenBuffer->Height / 2);
+		GameState->Player.Entity.Position.X = (real64)(ScreenBuffer->Width / 3);
+		GameState->Player.Entity.Position.Y = (real64)(ScreenBuffer->Height / 3);
 		GameState->Player.Entity.Width = 50;
-		GameState->Player.Entity.Color.R = 255;
-		GameState->Player.Entity.Color.G = 100;
-		GameState->Player.Entity.Color.B = 100;
+		GameState->Player.Entity.Color = COLORRED;
 		GameState->Player.Entity.MovementSpeed = 3;
 
 		GameState->Enemy.Position.X = (real64)(ScreenBuffer->Width / 2);
 		GameState->Enemy.Position.Y = (real64)(ScreenBuffer->Height / 2);
 		GameState->Enemy.Width = 50;
-		GameState->Enemy.Color.R = 0;
-		GameState->Enemy.Color.G = 150;
-		GameState->Enemy.Color.B = 150;
+		GameState->Enemy.Color = COLORGREEN;
 		GameState->Enemy.MovementSpeed = 1;
 
 		Memory->IsInitialized = true;
