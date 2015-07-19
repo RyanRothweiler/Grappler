@@ -50,6 +50,54 @@ typedef double real64;
 #include "vector2.cpp"
 #include "Color.h"
 
+
+struct wave_file_header
+{
+	DWORD ChunkID;
+	DWORD ChunkSize;
+	DWORD Format;
+	DWORD SubChunkID;
+	DWORD SubChunk1Size;
+	WORD AudioFormat;
+	WORD NumChannels;
+	DWORD SampleRate;
+	DWORD ByteRate;
+	WORD BlockAlign;
+	WORD BitsPerSample;
+	DWORD SubChunk2ID;
+	DWORD SubChunk2Siz;
+	DWORD DataSize;
+};
+
+struct wave_file
+{
+	wave_file_header Header;
+	void *Data;
+};
+
+struct win32_audio_output
+{
+	int SamplesPerSecond;
+	int ToneHz;
+	int SquareWavePeriod;
+	int BytesPerSample;
+	int SecondaryBufferSize;
+	real32 ToneVolume;
+	int HalfSquareWavePeriod;
+	uint32 RunningSampleIndex;
+	DWORD SafetyBytes;
+};
+
+struct game_audio_output_buffer
+{
+	// NOTE this running sample index is only for creating the sinwave. We don't need this otherwise. Remove this eventually.
+	uint32 RunningSampleIndex;
+
+	int SamplesPerSecond;
+	int SampleCount;
+	int16 *Samples;
+};
+
 struct screen_buffer
 {
 	DWORD Width;
@@ -59,21 +107,6 @@ struct screen_buffer
 	void *ScreenBuffer;
 
 	color BackgroundColor;
-};
-
-struct active_entity
-{
-	vector2 Position;
-	vector2 DeltaPosition;
-
-	uint16 Width;
-	color Color;
-	real32 MovementSpeed;
-};
-
-struct player
-{
-	active_entity Entity;
 };
 
 struct input_button
@@ -110,36 +143,37 @@ struct game_input
 	bool32 RightStickButton;
 };
 
+struct active_entity
+{
+	vector2 Position;
+	vector2 Velocity;
+
+	uint16 Width;
+	color Color;
+	real32 MovementSpeed;
+};
+
+struct player
+{
+	active_entity Entity;
+};
+
 struct game_state
 {
+	int32 WorldEntityCount;
+	active_entity *WorldEntities[2];
+
 	player Player;
 	active_entity Enemy;
 
+	real64 CameraFollowCoefficient;
+	active_entity Camera;
+
+	char *DebugOutput = "";
+
+	wave_file WaveToneFile;
+
 };
-
-struct win32_audio_output
-{
-	int SamplesPerSecond;
-	int ToneHz;
-	int SquareWavePeriod;
-	int BytesPerSample;
-	int SecondaryBufferSize;
-	real32 ToneVolume;
-	int HalfSquareWavePeriod;
-	uint32 RunningSampleIndex;
-	DWORD SafetyBytes;
-};
-
-struct game_audio_output_buffer
-{
-	// NOTE this running sample index is only for creating the sinwave. We don't need this otherwise. Remove this eventually.
-	uint32 RunningSampleIndex;
-
-	int SamplesPerSecond;
-	int SampleCount;
-	int16 *Samples;
-};
-
 
 struct game_memory
 {
@@ -155,7 +189,6 @@ struct game_memory
 
 	int64 ElapsedCycles;
 };
-
 
 
 #define GAME_LOOP(name) void name(game_memory *Memory, game_input *GameInput, screen_buffer *ScreenBuffer, game_audio_output_buffer *AudioBuffer)

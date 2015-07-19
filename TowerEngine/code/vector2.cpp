@@ -1,8 +1,4 @@
-struct vector2
-{
-	real64 X;
-	real64 Y;
-};
+#include "Vector2.h"
 
 vector2 operator+(vector2 A, vector2 B)
 {
@@ -76,7 +72,6 @@ vector2 operator*(vector2 A, vector2 B)
 	return (Output);
 }
 
-
 vector2
 NormalizeVector2(vector2 Input)
 {
@@ -86,6 +81,16 @@ NormalizeVector2(vector2 Input)
 	Output.X = Input.X / VectorLength;
 	Output.Y = Input.Y / VectorLength;
 
+	return (Output);
+}
+
+real64 
+Vector2Distance(vector2 A, vector2 B)
+{
+	real64 Output = 0;
+	real64 ASideLength = Abs(A.X - B.X);
+	real64 BSideLength = Abs(A.Y - B.Y);
+	Output = SquareRoot((ASideLength * ASideLength) + (BSideLength * BSideLength));
 	return (Output);
 }
 

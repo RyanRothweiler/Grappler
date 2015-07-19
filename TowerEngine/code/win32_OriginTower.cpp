@@ -9,15 +9,12 @@ int64 ElapsedFrameCount;
 int64 PerfCountFrequency;
 LPDIRECTSOUNDBUFFER SoundSecondaryBuffer;
 
-struct input_recording
+struct win32_game_code
 {
-	HANDLE RecordingFileHandle;
-	uint32 RecordingIndex;
+	HMODULE GameCodeDLL;
+	game_update_and_render *GameLoop;
 
-	HANDLE PlayingFileHandle;
-	uint32 PlayingIndex;
-
-	char *FileName = "OriginTower.tir";
+	bool32 IsValid;
 };
 
 int32
@@ -264,14 +261,6 @@ DrawPixels(HWND WindowHandle)
 	ReleaseDC(WindowHandle, DeviceContext);
 }
 
-struct win32_game_code
-{
-	HMODULE GameCodeDLL;
-	game_update_and_render *GameLoop;
-
-	bool32 IsValid;
-};
-
 win32_game_code
 LoadGameCode()
 {
@@ -306,7 +295,7 @@ UnloadGameCode(win32_game_code *GameCode)
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
 void
-Win32LoadDirectSound(HWND WindowHandle, win32_audio_output *SoundOutput)
+LoadDirectSound(HWND WindowHandle, win32_audio_output *SoundOutput)
 {
 	HMODULE DSoundLibrary = LoadLibraryA("dsound.dll");
 	if (DSoundLibrary)
@@ -378,13 +367,45 @@ Win32LoadDirectSound(HWND WindowHandle, win32_audio_output *SoundOutput)
 }
 
 void
-Win32FillSoundOutput(game_audio_output_buffer *GameAudio, win32_audio_output *SoundOutput,
-                     DWORD ByteToLock, DWORD BytesToWrite)
+FillSoundOutput(game_audio_output_buffer *GameAudio, win32_audio_output *SoundOutput,
+                DWORD ByteToLock, DWORD BytesToWrite,
+                wave_file *TESTWAVFILE)
 {
 	VOID *Region1;
 	DWORD Region1Size;
 	VOID *Region2;
 	DWORD Region2Size;
+
+	// if (SUCCEEDED(SoundSecondaryBuffer->Lock(ByteToLock, BytesToWrite,
+	//               &Region1, &Region1Size,
+	//               &Region2,  &Region2Size,
+	//               0)))
+	// {
+	// 	DWORD Region1SampleCount = Region1Size / SoundOutput->BytesPerSample;
+	// 	int16 *DestSample = (int16 *)Region1;
+	// 	int16 *SourceSamples = GameAudio->Samples;
+	// 	for (DWORD SampleIndex = 0;
+	// 	     SampleIndex < Region1SampleCount;
+	// 	     ++SampleIndex)
+	// 	{
+	// 		*DestSample++ = *SourceSamples++;
+	// 		*DestSample++ = *SourceSamples++;
+	// 		++SoundOutput->RunningSampleIndex;
+	// 	}
+
+	// 	DWORD Region2SampleCount = Region2Size / SoundOutput->BytesPerSample;
+	// 	DestSample = (int16 *)Region2;
+	// 	for (DWORD SampleIndex = 0;
+	// 	     SampleIndex < Region2SampleCount;
+	// 	     ++SampleIndex)
+	// 	{
+	// 		*DestSample++ = *SourceSamples++;
+	// 		*DestSample++ = *SourceSamples++;
+	// 		++SoundOutput->RunningSampleIndex;
+	// 	}
+
+	// 	SoundSecondaryBuffer->Unlock(Region1, Region1Size, Region2, Region2Size);
+	// }
 
 	if (SUCCEEDED(SoundSecondaryBuffer->Lock(ByteToLock, BytesToWrite,
 	              &Region1, &Region1Size,
@@ -393,7 +414,7 @@ Win32FillSoundOutput(game_audio_output_buffer *GameAudio, win32_audio_output *So
 	{
 		DWORD Region1SampleCount = Region1Size / SoundOutput->BytesPerSample;
 		int16 *DestSample = (int16 *)Region1;
-		int16 *SourceSamples = GameAudio->Samples;
+		int16 *SourceSamples = (int16 *)TESTWAVFILE->Data;
 		for (DWORD SampleIndex = 0;
 		     SampleIndex < Region1SampleCount;
 		     ++SampleIndex)
@@ -496,6 +517,60 @@ LoadState(char *FileName, game_memory *GameMemory)
 	CloseHandle(FileHandle);
 }
 
+struct read_file_result
+{
+	uint32 ContentsSize;
+	void *Contents;
+};
+
+read_file_result
+GetFile(char *FileName)
+{
+	read_file_result Result = {};
+
+	HANDLE FileHandle = CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+	if (FileHandle != INVALID_HANDLE_VALUE)
+	{
+		LARGE_INTEGER FileSize;
+		if (GetFileSizeEx(FileHandle, &FileSize))
+		{
+			uint32 FileSize32 = (uint32)FileSize.QuadPart;
+			Result.Contents = VirtualAlloc(0, FileSize32, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+			if (Result.Contents)
+			{
+				DWORD BytesRead;
+				if (ReadFile(FileHandle, Result.Contents, FileSize32, &BytesRead, 0) &&
+				    (FileSize32 == BytesRead))
+				{
+					// File read successfully
+					Result.ContentsSize = FileSize32;
+				}
+				else
+				{
+					VirtualFree(Result.Contents, 0, MEM_RELEASE);
+					Result.Contents = 0;
+				}
+			}
+			else
+			{
+
+			}
+		}
+		else
+		{
+
+		}
+
+		CloseHandle(FileHandle);
+	}
+	else
+	{
+
+	}
+
+	return (Result);
+}
+
 int CALLBACK
 WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowCode)
 {
@@ -561,6 +636,14 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 			GameMemory.TransientStorage = (uint8 *)GameMemory.PermanentStorage + GameMemory.PermanentStorageSize;
 
 
+
+			read_file_result Result = GetFile("../assets/audio/testNote.wav");
+			wave_file_header *WaveHeader = (wave_file_header *)Result.Contents;
+			wave_file WaveFile = {};
+			WaveFile.Header = *WaveHeader;
+			WaveFile.Data = (uint32 *)((uint8 *)Result.Contents + 44);
+
+
 			LARGE_INTEGER PreviousFrameCount = GetWallClock();
 
 			win32_audio_output SoundOutput = {};
@@ -576,7 +659,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 
 			int16 *AudioSamplesMemory = (int16 *)VirtualAlloc(0, SoundOutput.SecondaryBufferSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
-			Win32LoadDirectSound(WindowHandle, &SoundOutput);
+			LoadDirectSound(WindowHandle, &SoundOutput);
 			SoundSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 
 			win32_game_code GameCode = LoadGameCode();
@@ -709,7 +792,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 					}
 
 					ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample) %
-					                   SoundOutput.SecondaryBufferSize;
+					             SoundOutput.SecondaryBufferSize;
 
 
 					DWORD ExpectedSoundBytesPerFrame = (int)(((real32)(SoundOutput.SamplesPerSecond *
@@ -756,7 +839,15 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 				}
 
 				GameCode.GameLoop(&GameMemory, &GameInput, &ScreenBuffer, &GameAudio);
-				Win32FillSoundOutput(&GameAudio, &SoundOutput, ByteToLock, BytesToWrite);
+				FillSoundOutput(&GameAudio, &SoundOutput, ByteToLock, BytesToWrite, &WaveFile);
+
+				game_state *GameStateFromMemory = (game_state *)GameMemory.PermanentStorage; \
+				char *EmptyChar = "";
+				if (GameStateFromMemory->DebugOutput != EmptyChar)
+				{
+					DebugLine(GameStateFromMemory->DebugOutput);
+					GameStateFromMemory->DebugOutput = EmptyChar;
+				}
 
 				DrawPixels(WindowHandle);
 

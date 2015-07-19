@@ -1,0 +1,8 @@
+ToDo:
+  ☐ when a collision is detected move object the difference instead of just instantly stopping
+  ☐ collision detection allows objects to slide on each other.
+  ☐ look at why state saving is breaking when loading a state which was saved by a different game instance 
+
+＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+Archive:
+ ✔ Change positions to center instead of top left @done (15-07-18 06:51) @project(ToDo)
