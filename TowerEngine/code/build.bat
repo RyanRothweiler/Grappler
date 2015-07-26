@@ -12,6 +12,6 @@ pushd ..\build
 
 REM 64-bit build
 del *.pdb > NUL 2> NUL
-cl %BuildVariables% %CommonCompilerFlags% ..\code\OriginTower.cpp -LD /link -incremental:no -opt:ref /PDB:origin_%random%.pdb /EXPORT:GameLoop
+cl %BuildVariables% %CommonCompilerFlags% ..\code\OriginTower.cpp -LD /link -incremental:no -opt:ref /PDB:origin_%random%.pdb /EXPORT:GameLoop /EXPORT:GameLoadAssets
 cl %BuildVariables% %CommonCompilerFlags% ..\code\win32_OriginTower.cpp /link %CommonLinkerFlags%
 popd

@@ -1,6 +1,8 @@
 
 #include "OriginTower.h"
 
+static platform_read_file *PlatformReadFile;
+
 void
 DrawSquare(int32 XPos, int32 YPos, uint32 squareSize, color Color,
            screen_buffer ScreenBuffer)
@@ -128,12 +130,171 @@ DebugLine(char *Output, game_state *GameState)
 	GameState->DebugOutput = Output;
 }
 
+inline riff_iterator
+ParseChunkAt(void *At, void *Stop)
+{
+	riff_iterator Iter;
+
+	Iter.At = (uint8 *)At;
+	Iter.Stop = (uint8 *)Stop;
+
+	return (Iter);
+}
+
+inline riff_iterator
+NextChunk(riff_iterator Iter)
+{
+	wave_chunk *Chunk = (wave_chunk *)Iter.At;
+	uint32 Size = (Chunk->Size + 1) & ~1;
+	Iter.At += sizeof(wave_chunk) + Size;
+
+	return (Iter);
+}
+
+inline bool32
+IsValid(riff_iterator Iter)
+{
+	bool32 Result = (Iter.At < Iter.Stop);
+	return (Result);
+}
+
+inline void *
+GetChunkData(riff_iterator Iter)
+{
+	void *Result = (Iter.At + sizeof(wave_chunk));
+	return (Result);
+}
+
+inline uint32
+GetType(riff_iterator Iter)
+{
+	wave_chunk *Chunk = (wave_chunk *)Iter.At;
+	uint32 Result = Chunk->ID;
+
+	return (Result);
+}
+
+uint32
+GetChunkDataSize(riff_iterator Iter)
+{
+	wave_chunk *Chunk = (wave_chunk *)Iter.At;
+	uint32 Result = Chunk->Size;
+
+	return (Result);
+}
+
+loaded_sound
+LoadWave(char *FilePath)
+{
+	loaded_sound Result = {};
+
+	//NOTE this is the loading the wave file code. Maybe all this should be pulled into the game layer
+	read_file_result WaveResult = PlatformReadFile(FilePath);
+	wave_header *WaveHeader = (wave_header *)WaveResult.Contents;
+	Assert(WaveHeader->RiffID == WAVE_ChunkID_RIFF);
+	Assert(WaveHeader->WaveID == WAVE_ChunkID_WAVE);
+
+	uint32 ChannelCount = 0;
+	uint32 SampleDataSize = 0;
+	int16 *SampleData = 0;
+	for (riff_iterator Iter = ParseChunkAt(WaveHeader + 1, (uint8 *)(WaveHeader + 1) + WaveHeader->Size - 4);
+	     IsValid(Iter);
+	     Iter = NextChunk(Iter))
+	{
+		switch (GetType(Iter))
+		{
+			case WAVE_ChunkID_fmt:
+			{
+				wave_fmt *fmt = (wave_fmt *)GetChunkData(Iter);
+
+				// NOTE Assert that this file is in a supported format
+				// Using PCM format;
+				Assert(fmt->Format == 1);
+				Assert(fmt->NumSamplesPerSecond == 48000);
+				Assert(fmt->BitsPerSample == 16);
+				Assert(fmt->BlockAlign == (sizeof(int16) * fmt->NumberOfChannels));
+				ChannelCount = fmt->NumberOfChannels;
+			} break;
+			case WAVE_ChunkID_data:
+			{
+				SampleData = (int16 *)GetChunkData(Iter);
+				SampleDataSize = GetChunkDataSize(Iter);
+			} break;
+		}
+	}
+
+	Result.ChannelCount = ChannelCount;
+	Result.SampleCount = SampleDataSize / (ChannelCount * sizeof(int16));
+	if (ChannelCount == 1)
+	{
+		Result.Samples[0] = SampleData;
+		Result.Samples[1] = 0;
+	}
+	else if (ChannelCount == 2)
+	{
+
+		Result.Samples[0] = SampleData;
+		Result.Samples[1] = SampleData + Result.SampleCount;
+
+		for (uint32 SampleIndex = 0;
+		     SampleIndex < Result.SampleCount;
+		     ++SampleIndex)
+		{
+			int16 Source = SampleData[2 * SampleIndex];
+			SampleData[2 * SampleIndex] = SampleData[SampleIndex];
+			SampleData[SampleIndex] = Source;
+		}
+	}
+	else
+	{
+		Assert(!"Invalid Channel Count");
+	}
+
+	// TODO this only loads the left channel. MAYBE load the right channel too
+	Result.ChannelCount = 1;
+
+	return (Result);
+}
+
+loaded_image
+LoadBMP(char *FilePath)
+{
+	loaded_image Result = {};
+
+	//NOTE this is the loading the wave file code. Maybe all this should be pulled into the game layer
+	read_file_result FileResult = PlatformReadFile(FilePath);
+	bmp_header *Header = (bmp_header *)FileResult.Contents;
+
+	Assert(0);
+
+	return (Result);
+}
+
+void
+LoadAssets(game_state *GameState)
+{
+	// NOTE currently sound is forced at...
+	// Mono, 16 bit, 48000.
+	// anything else won't work. need to implement stereo sound at some point.
+	GameState->TestNoteSampleIndex = 0;
+	GameState->TestNote = LoadWave("../assets/testNote.wav");
+
+	GameState->TestImage = LoadBMP("../assets/TestImage.bmp");
+
+	// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
+	DebugLine("Loaded", GameState);
+}
+
 extern "C" GAME_LOOP(GameLoop)
 {
+	PlatformReadFile = Memory->PlatformReadFile;
+
 	Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
 	if (!Memory->IsInitialized)
 	{
+		GameState->PrintFPS = false;
+
 		GameState->Player.Entity.Position.X = (real64)(ScreenBuffer->Width / 2);
 		GameState->Player.Entity.Position.Y = (real64)(ScreenBuffer->Height / 2);
 		GameState->Player.Entity.Width = 50;
@@ -155,9 +316,12 @@ extern "C" GAME_LOOP(GameLoop)
 		GameState->Camera.MovementSpeed = 3;
 		GameState->Camera.Width = 0;
 
+		LoadAssets(GameState);
+
 		AudioBuffer->RunningSampleIndex = 0;
 
 		Memory->IsInitialized = true;
+
 		// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
 		DebugLine("Initialized", GameState);
 	}
@@ -166,21 +330,28 @@ extern "C" GAME_LOOP(GameLoop)
 	active_entity *Enemy = &GameState->Enemy;
 	active_entity *Camera = &GameState->Camera;
 
-	int16 ToneVolume = 3000;
-	int32 ToneHz = 400;
-	int WavePeriod = AudioBuffer->SamplesPerSecond / ToneHz;
-	int HalfSquareWavePeriod = WavePeriod / 2;
+	if (GameInput->BButton.OnDown)
+	{
+		GameState->TestNoteSampleIndex = 0;
+	}
 
+	// NOTE Sound doesn't work well at all when fps drops below 60
 	int16 *SampleOut = AudioBuffer->Samples;
 	for (int SampleIndex = 0;
 	     SampleIndex < AudioBuffer->SampleCount;
 	     ++SampleIndex)
 	{
-		// int16 SampleValue = ((AudioBuffer->RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? (int16)(ToneVolume * 10000) : (int16)(-ToneVolume * 10000);
 		int16 SampleValue = 0;
+
+		uint32 SampleValueIndex = (GameState->TestNoteSampleIndex + SampleIndex);
+		if (SampleValueIndex < GameState->TestNote.SampleCount)
+		{
+			SampleValue = GameState->TestNote.Samples[0][SampleValueIndex];
+		}
 		*SampleOut++ = SampleValue;
 		*SampleOut++ = SampleValue;
 	}
+	GameState->TestNoteSampleIndex += AudioBuffer->SampleCount;
 
 
 	for (int EntityIndex = 0;
@@ -232,4 +403,10 @@ extern "C" GAME_LOOP(GameLoop)
 		DrawSquare((uint32)EntityAbout->Position.X, (uint32)EntityAbout->Position.Y,
 		           EntityAbout->Width, EntityAbout->Color, *ScreenBuffer);
 	}
+}
+
+extern "C" GAME_LOAD_ASSETS(GameLoadAssets)
+{
+	game_state *GameState = (game_state *)Memory->PermanentStorage;
+	LoadAssets(GameState);
 }

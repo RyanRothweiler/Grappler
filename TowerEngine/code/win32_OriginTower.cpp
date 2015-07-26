@@ -1,4 +1,6 @@
-bool PRINTFPS = false;
+
+
+static bool PRINTFPS = false;
 
 #include "OriginTower.h"
 
@@ -13,6 +15,7 @@ struct win32_game_code
 {
 	HMODULE GameCodeDLL;
 	game_update_and_render *GameLoop;
+	game_load_assets *GameLoadAssets;
 
 	bool32 IsValid;
 };
@@ -271,6 +274,7 @@ LoadGameCode()
 	if (Result.GameCodeDLL)
 	{
 		Result.GameLoop = (game_update_and_render *)GetProcAddress(Result.GameCodeDLL, "GameLoop");
+		Result.GameLoadAssets = (game_load_assets *)GetProcAddress(Result.GameCodeDLL, "GameLoadAssets");
 	}
 
 	// NOTE this is the wrong way to set is valid. we don't actually know it is valid.
@@ -307,7 +311,8 @@ LoadDirectSound(HWND WindowHandle, win32_audio_output *SoundOutput)
 		{
 			WAVEFORMATEX WaveFormat = {};
 			WaveFormat.wFormatTag = WAVE_FORMAT_PCM;
-			WaveFormat.nChannels = 2;
+			// NOTE channels maybe should be 2.
+			WaveFormat.nChannels = 1;
 			WaveFormat.nSamplesPerSec = SoundOutput->SamplesPerSecond;
 			WaveFormat.wBitsPerSample = 16;
 			WaveFormat.nBlockAlign = (WaveFormat.nChannels * WaveFormat.wBitsPerSample) / 8;
@@ -368,44 +373,12 @@ LoadDirectSound(HWND WindowHandle, win32_audio_output *SoundOutput)
 
 void
 FillSoundOutput(game_audio_output_buffer *GameAudio, win32_audio_output *SoundOutput,
-                DWORD ByteToLock, DWORD BytesToWrite,
-                wave_file *TESTWAVFILE)
+                DWORD ByteToLock, DWORD BytesToWrite)
 {
 	VOID *Region1;
 	DWORD Region1Size;
 	VOID *Region2;
 	DWORD Region2Size;
-
-	// if (SUCCEEDED(SoundSecondaryBuffer->Lock(ByteToLock, BytesToWrite,
-	//               &Region1, &Region1Size,
-	//               &Region2,  &Region2Size,
-	//               0)))
-	// {
-	// 	DWORD Region1SampleCount = Region1Size / SoundOutput->BytesPerSample;
-	// 	int16 *DestSample = (int16 *)Region1;
-	// 	int16 *SourceSamples = GameAudio->Samples;
-	// 	for (DWORD SampleIndex = 0;
-	// 	     SampleIndex < Region1SampleCount;
-	// 	     ++SampleIndex)
-	// 	{
-	// 		*DestSample++ = *SourceSamples++;
-	// 		*DestSample++ = *SourceSamples++;
-	// 		++SoundOutput->RunningSampleIndex;
-	// 	}
-
-	// 	DWORD Region2SampleCount = Region2Size / SoundOutput->BytesPerSample;
-	// 	DestSample = (int16 *)Region2;
-	// 	for (DWORD SampleIndex = 0;
-	// 	     SampleIndex < Region2SampleCount;
-	// 	     ++SampleIndex)
-	// 	{
-	// 		*DestSample++ = *SourceSamples++;
-	// 		*DestSample++ = *SourceSamples++;
-	// 		++SoundOutput->RunningSampleIndex;
-	// 	}
-
-	// 	SoundSecondaryBuffer->Unlock(Region1, Region1Size, Region2, Region2Size);
-	// }
 
 	if (SUCCEEDED(SoundSecondaryBuffer->Lock(ByteToLock, BytesToWrite,
 	              &Region1, &Region1Size,
@@ -414,7 +387,7 @@ FillSoundOutput(game_audio_output_buffer *GameAudio, win32_audio_output *SoundOu
 	{
 		DWORD Region1SampleCount = Region1Size / SoundOutput->BytesPerSample;
 		int16 *DestSample = (int16 *)Region1;
-		int16 *SourceSamples = (int16 *)TESTWAVFILE->Data;
+		int16 *SourceSamples = GameAudio->Samples;
 		for (DWORD SampleIndex = 0;
 		     SampleIndex < Region1SampleCount;
 		     ++SampleIndex)
@@ -504,11 +477,14 @@ SaveSate(char *FileName, game_memory *GameMemory)
 }
 
 void
-LoadState(char *FileName, game_memory *GameMemory)
+LoadState(char *FileName, game_memory *GameMemory, win32_game_code *GameCode)
 {
 	HANDLE FileHandle = CreateFileA(FileName, GENERIC_READ,  0, 0, OPEN_EXISTING, 0, 0);
 	DWORD BytesRead;
 	bool32 Success = ReadFile(FileHandle, GameMemory->GameMemoryBlock, (DWORD)GameMemory->TotalSize, &BytesRead, 0);
+
+	// 
+	GameCode->GameLoadAssets(GameMemory);
 
 	if (!Success)
 	{
@@ -517,14 +493,8 @@ LoadState(char *FileName, game_memory *GameMemory)
 	CloseHandle(FileHandle);
 }
 
-struct read_file_result
-{
-	uint32 ContentsSize;
-	void *Contents;
-};
-
 read_file_result
-GetFile(char *FileName)
+LoadFileData(char *FileName)
 {
 	read_file_result Result = {};
 
@@ -569,6 +539,26 @@ GetFile(char *FileName)
 	}
 
 	return (Result);
+}
+
+PLATFORM_READ_FILE(PlatformReadFile)
+{
+	read_file_result Result = LoadFileData(Path);
+	return (Result);
+}
+
+inline FILETIME
+GetGameCodeLastWriteTime()
+{
+	FILETIME LastWriteTime = {};
+
+	WIN32_FILE_ATTRIBUTE_DATA Data;
+	if (GetFileAttributesEx("OriginTower.dll", GetFileExInfoStandard, &Data))
+	{
+		LastWriteTime = Data.ftLastWriteTime;
+	}
+
+	return (LastWriteTime);
 }
 
 int CALLBACK
@@ -634,24 +624,13 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 			GameMemory.GameMemoryBlock = VirtualAlloc(BaseAddress, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 			GameMemory.PermanentStorage = GameMemory.GameMemoryBlock;
 			GameMemory.TransientStorage = (uint8 *)GameMemory.PermanentStorage + GameMemory.PermanentStorageSize;
-
-
-
-			read_file_result Result = GetFile("../assets/audio/testNote.wav");
-			wave_file_header *WaveHeader = (wave_file_header *)Result.Contents;
-			wave_file WaveFile = {};
-			WaveFile.Header = *WaveHeader;
-			WaveFile.Data = (uint32 *)((uint8 *)Result.Contents + 44);
-
+			GameMemory.PlatformReadFile = PlatformReadFile;
 
 			LARGE_INTEGER PreviousFrameCount = GetWallClock();
 
 			win32_audio_output SoundOutput = {};
 			SoundOutput.SamplesPerSecond = 48000;
-			SoundOutput.ToneHz = 256;
 			SoundOutput.RunningSampleIndex = 0;
-			SoundOutput.SquareWavePeriod = SoundOutput.SamplesPerSecond / SoundOutput.ToneHz;
-			SoundOutput.HalfSquareWavePeriod = SoundOutput.SquareWavePeriod / 2;
 			SoundOutput.BytesPerSample = sizeof(int16) * 2;
 			SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSecond * SoundOutput.BytesPerSample;
 			SoundOutput.ToneVolume = 0.1f;
@@ -663,7 +642,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 			SoundSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 
 			win32_game_code GameCode = LoadGameCode();
-			uint32 LoadCounter = 0;
+			FILETIME GameCodeLastWriteTime = GetGameCodeLastWriteTime();
 
 			while (GlobalRunning)
 			{
@@ -680,12 +659,12 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 					}
 				}
 
-				LoadCounter++;
-				if (LoadCounter > 60)
+				FILETIME NewDLLWriteTime = GetGameCodeLastWriteTime();
+				if (CompareFileTime(&NewDLLWriteTime, &GameCodeLastWriteTime) != 0)
 				{
 					UnloadGameCode(&GameCode);
 					GameCode = LoadGameCode();
-					LoadCounter = 0;
+					GameCodeLastWriteTime = NewDLLWriteTime;
 				}
 
 				DWORD dwResult;
@@ -741,7 +720,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 				}
 				if (GameInput.R1.OnDown && !GameInput.Select.IsDown)
 				{
-					LoadState(Slot1Name, &GameMemory);
+					LoadState(Slot1Name, &GameMemory, &GameCode);
 					FillPixels(&ScreenBuffer);
 				}
 
@@ -751,7 +730,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 				}
 				if (GameInput.L1.OnDown && !GameInput.Select.IsDown)
 				{
-					LoadState(Slot2Name, &GameMemory);
+					LoadState(Slot2Name, &GameMemory, &GameCode);
 					FillPixels(&ScreenBuffer);
 				}
 
@@ -761,7 +740,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 				}
 				if (GameInput.R2.OnDown && !GameInput.Select.IsDown)
 				{
-					LoadState(Slot3Name, &GameMemory);
+					LoadState(Slot3Name, &GameMemory, &GameCode);
 					FillPixels(&ScreenBuffer);
 				}
 
@@ -771,7 +750,7 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 				}
 				if (GameInput.L2.OnDown && !GameInput.Select.IsDown)
 				{
-					LoadState(Slot4Name, &GameMemory);
+					LoadState(Slot4Name, &GameMemory, &GameCode);
 					FillPixels(&ScreenBuffer);
 				}
 
@@ -839,11 +818,12 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 				}
 
 				GameCode.GameLoop(&GameMemory, &GameInput, &ScreenBuffer, &GameAudio);
-				FillSoundOutput(&GameAudio, &SoundOutput, ByteToLock, BytesToWrite, &WaveFile);
+				FillSoundOutput(&GameAudio, &SoundOutput, ByteToLock, BytesToWrite);
 
-				game_state *GameStateFromMemory = (game_state *)GameMemory.PermanentStorage; \
+				game_state *GameStateFromMemory = (game_state *)GameMemory.PermanentStorage; 
 				char *EmptyChar = "";
-				if (GameStateFromMemory->DebugOutput != EmptyChar)
+				if (GameStateFromMemory->DebugOutput &&
+				    GameStateFromMemory->DebugOutput != EmptyChar)
 				{
 					DebugLine(GameStateFromMemory->DebugOutput);
 					GameStateFromMemory->DebugOutput = EmptyChar;
@@ -867,10 +847,12 @@ WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowC
 
 				ElapsedFrameCount = WorkFrameCount.QuadPart - PreviousFrameCount.QuadPart;
 				int64 MSThisFrame = (1000 * ElapsedFrameCount) / PerfCountFrequency;
+
+				// NOTE game is forced at 60 fps. Anything smaller doesn't work.
 				int64 FPS = PerfCountFrequency / ElapsedFrameCount;
 				char charFPS[MAX_PATH] = {};
 				ConcatIntChar(FPS, " FPS", charFPS);
-				if (PRINTFPS)
+				if (GameStateFromMemory->PrintFPS)
 				{
 					DebugLine(charFPS);
 				}

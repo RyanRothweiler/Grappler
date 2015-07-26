@@ -51,41 +51,78 @@ typedef double real64;
 #include "Color.h"
 
 
-struct wave_file_header
+struct wave_header
 {
-	DWORD ChunkID;
-	DWORD ChunkSize;
-	DWORD Format;
-	DWORD SubChunkID;
-	DWORD SubChunk1Size;
-	WORD AudioFormat;
-	WORD NumChannels;
-	DWORD SampleRate;
-	DWORD ByteRate;
-	WORD BlockAlign;
-	WORD BitsPerSample;
-	DWORD SubChunk2ID;
-	DWORD SubChunk2Siz;
-	DWORD DataSize;
+	uint32 RiffID;
+	uint32 Size;
+	uint32 WaveID;
 };
 
-struct wave_file
+#define WAVE_CODE(a, b, c, d) (((uint32)(a) << 0) | ((uint32)(b) << 8) | ((uint32)(c) << 16) | ((uint32)(d) << 24))
+enum
 {
-	wave_file_header Header;
-	void *Data;
+	WAVE_ChunkID_fmt = WAVE_CODE('f', 'm', 't', ' '),
+	WAVE_ChunkID_data = WAVE_CODE('d', 'a', 't', 'a'),
+	WAVE_ChunkID_RIFF = WAVE_CODE('R', 'I', 'F', 'F'),
+	WAVE_ChunkID_WAVE = WAVE_CODE('W', 'A', 'V', 'E'),
 };
 
+struct wave_chunk
+{
+	uint32 ID;
+	uint32 Size;
+};
+
+struct wave_fmt
+{
+	uint16 Format;
+	uint16 NumberOfChannels;
+	uint32 NumSamplesPerSecond;
+	uint32 AverageBytesPerSec;
+	uint16 BlockAlign;
+	uint16 BitsPerSample;
+	uint16 CBSize;
+	uint16 ValidBitsPerSample;
+	uint32 ChannelMask;
+	uint8 SubFormat[16];
+};
+
+struct riff_iterator
+{
+	uint8 *At;
+	uint8 *Stop;
+};
+
+// NOTE only the platform touches this
 struct win32_audio_output
 {
 	int SamplesPerSecond;
-	int ToneHz;
-	int SquareWavePeriod;
 	int BytesPerSample;
 	int SecondaryBufferSize;
 	real32 ToneVolume;
-	int HalfSquareWavePeriod;
 	uint32 RunningSampleIndex;
 	DWORD SafetyBytes;
+};
+
+struct loaded_sound
+{
+	uint32 SampleCount;
+	uint32 ChannelCount;
+	int16 *Samples[2];
+};
+
+struct bmp_header
+{
+	uint16 Type;
+	uint32 Size;
+	uint16 ReservedA;
+	uint16 ReservedB;
+	uint32 Offset;
+};
+
+struct loaded_image
+{
+
 };
 
 struct game_audio_output_buffer
@@ -169,11 +206,24 @@ struct game_state
 	real64 CameraFollowCoefficient;
 	active_entity Camera;
 
+	loaded_sound TestNote;
+	uint32 TestNoteSampleIndex;
+
+	loaded_image TestImage;
+
+	bool PrintFPS;
+
 	char *DebugOutput = "";
-
-	wave_file WaveToneFile;
-
 };
+
+struct read_file_result
+{
+	uint32 ContentsSize;
+	void *Contents;
+};
+
+#define PLATFORM_READ_FILE(name) read_file_result name(char *Path)
+typedef PLATFORM_READ_FILE(platform_read_file);
 
 struct game_memory
 {
@@ -188,11 +238,16 @@ struct game_memory
 	void *GameMemoryBlock;
 
 	int64 ElapsedCycles;
-};
 
+	platform_read_file *PlatformReadFile;
+};
 
 #define GAME_LOOP(name) void name(game_memory *Memory, game_input *GameInput, screen_buffer *ScreenBuffer, game_audio_output_buffer *AudioBuffer)
 typedef GAME_LOOP(game_update_and_render);
 GAME_LOOP(GameLoopStub)
-{
-}
+{ }
+
+#define GAME_LOAD_ASSETS(name) void name(game_memory *Memory)
+typedef GAME_LOAD_ASSETS(game_load_assets);
+GAME_LOAD_ASSETS(GameLoadAssetsStub)
+{ }
