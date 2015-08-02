@@ -1,0 +1,43 @@
+ General:
+   ☐ opengl drawing bitmap
+   ☐ render bitmap background with opengl
+   ☐ test background moving with camera
+   ☐ strip out all old windows software rendering code
+   ☐ try to pull save state code out into methods
+   ☐ switch color constants to #defines? Is this a good idea?
+
+   ☐ smooth camera follower
+   ☐ player takes damage
+   ☐ use git command line to commit the project
+   ☐ put in safeguards so when loading a savestate from a previous version it doesn't crash
+
+ UI:
+   ☐ ui button with normal / selected / down states
+   ☐ ui button concept
+   ☐ visualize player health in ui
+
+
+ Physics:
+   ☐ when objects collide move the collider the difference so no gaps
+   ☐ allow colliding objects to slide on eachother
+   ☐ collision checking allowing IsColliding
+   ☐ collision checking allowing OnCollision
+
+ Audio:
+   ☐ extend audio to support stereo
+
+Graphics:
+   ☐ Create a render order
+
+Color:
+   ☐ Change color to use floats (0.0 - 1.0) instead of (0 - 255)
+
+  
+
+
+＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+Archive:
+ ✔ opengl drawing square @done (15-08-02 03:19) @project(General)
+ ✔ make sure state loading still works in opengl @done (15-08-02 03:03) @project(General)
+ ✔ make sure sound still works in opengl @done (15-08-01 12:16) @project(General)
+ ✔ opening opengl window @done (15-08-01 07:53) @project(General)

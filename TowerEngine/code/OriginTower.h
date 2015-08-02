@@ -1,5 +1,12 @@
 
+
+#define GLFW_DLL
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WGL
+
 #include <windows.h>
+#include "GLFW/glfw3.h"
+#include "GLFW/glfw3native.h"
 #include <xinput.h>
 #include <dsound.h>
 
@@ -111,18 +118,27 @@ struct loaded_sound
 	int16 *Samples[2];
 };
 
+#pragma pack(push, 1)
 struct bmp_header
 {
-	uint16 Type;
+	uint16 FileType;
+	uint32 FileSize;
+	uint16 Reserved1;
+	uint16 Reserved2;
+	uint32 BitmapOffset;
 	uint32 Size;
-	uint16 ReservedA;
-	uint16 ReservedB;
-	uint32 Offset;
+	int32 Width;
+	int32 Height;
+	uint16 Planes;
+	uint16 BitsPerPixel;
 };
+#pragma pack(pop)
 
 struct loaded_image
 {
-
+	uint32 Width;
+	uint32 Height;
+	uint32 *Pixels;
 };
 
 struct game_audio_output_buffer
@@ -137,11 +153,11 @@ struct game_audio_output_buffer
 
 struct screen_buffer
 {
-	DWORD Width;
-	DWORD Height;
-
 	uint32 BytesPerPixel = 4;
 	void *ScreenBuffer;
+
+	DWORD Width;
+	DWORD Height;
 
 	color BackgroundColor;
 };
@@ -180,14 +196,24 @@ struct game_input
 	bool32 RightStickButton;
 };
 
+struct gl_square
+{
+	color Color;
+	vector2 TopLeft;
+	vector2 TopRight;
+	vector2 BottomLeft;
+	vector2 BottomRight;
+};
+
 struct active_entity
 {
 	vector2 Position;
 	vector2 Velocity;
 
 	uint16 Width;
-	color Color;
 	real32 MovementSpeed;
+
+	gl_square GraphicSquare;
 };
 
 struct player
@@ -198,7 +224,7 @@ struct player
 struct game_state
 {
 	int32 WorldEntityCount;
-	active_entity *WorldEntities[2];
+	active_entity *WorldEntities[50];
 
 	player Player;
 	active_entity Enemy;
@@ -209,10 +235,14 @@ struct game_state
 	loaded_sound TestNote;
 	uint32 TestNoteSampleIndex;
 
-	loaded_image TestImage;
+	loaded_image BackgroundImage;
+	int16 BackgroundPositionsCount;
+	vector2 BackgroundPositions[50];
+
+	uint32 SquareCount;
+	gl_square *GLSquares[50];
 
 	bool PrintFPS;
-
 	char *DebugOutput = "";
 };
 

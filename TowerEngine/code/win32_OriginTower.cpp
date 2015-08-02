@@ -147,41 +147,6 @@ CheckStickDeadzone(short Value, SHORT DeadZoneThreshold)
 }
 
 void
-FillPixels(screen_buffer *ScreenBuffer)
-{
-	uint8 *Row = (uint8 *)ScreenBuffer->ScreenBuffer;
-	for (uint32 Y = 0;
-	     Y < ScreenBuffer->Height;
-	     ++Y)
-	{
-		uint8 *Pixel = (uint8 *)Row;
-		for (uint32 X = 0;
-		     X < ScreenBuffer->Width;
-		     ++X)
-		{
-			// B
-			*Pixel = ScreenBuffer->BackgroundColor.B;
-			++Pixel;
-
-			// G
-			*Pixel = ScreenBuffer->BackgroundColor.G;
-			++Pixel;
-
-			// R
-			*Pixel = ScreenBuffer->BackgroundColor.R;
-			++Pixel;
-
-			// A?
-			*Pixel = ScreenBuffer->BackgroundColor.A;
-			++Pixel;
-
-		}
-		uint32 Pitch = ScreenBuffer->Width * ScreenBuffer->BytesPerPixel;
-		Row += Pitch;
-	}
-}
-
-void
 ProcessButtonInput(input_button *ButtonProcessing, bool32 NewState)
 {
 	if (NewState)
@@ -226,42 +191,6 @@ ProcessTriggerInput(input_button *Trigger, int32 TriggerValue)
 	{
 		ProcessButtonInput(Trigger, false);
 	}
-}
-
-
-void
-UpdateScreenSize(HWND WindowHandle)
-{
-	RECT WindowRect;
-	GetWindowRect(WindowHandle, &WindowRect);
-	ScreenBuffer.Width = WindowRect.right - WindowRect.left;
-	ScreenBuffer.Height = WindowRect.bottom - WindowRect.top;
-
-	uint32 MemSize = ScreenBuffer.Width * ScreenBuffer.Height * ScreenBuffer.BytesPerPixel;
-	ScreenBuffer.ScreenBuffer =  VirtualAlloc(0, MemSize, MEM_COMMIT, PAGE_READWRITE);
-}
-
-void
-DrawPixels(HWND WindowHandle)
-{
-	HDC DeviceContext = GetDC(WindowHandle);
-
-	BITMAPINFO BitMapInfo = {};
-	BitMapInfo.bmiHeader.biSize = sizeof(BitMapInfo.bmiHeader);
-	BitMapInfo.bmiHeader.biWidth = ScreenBuffer.Width;
-	BitMapInfo.bmiHeader.biHeight = -1 * (int32)ScreenBuffer.Height;
-	BitMapInfo.bmiHeader.biPlanes = 1;
-	BitMapInfo.bmiHeader.biBitCount = 32;
-	BitMapInfo.bmiHeader.biCompression = BI_RGB;
-
-	StretchDIBits(DeviceContext,
-	              0, 0, ScreenBuffer.Width, ScreenBuffer.Height,
-	              0, 0, ScreenBuffer.Width, ScreenBuffer.Height,
-	              ScreenBuffer.ScreenBuffer, &BitMapInfo,
-	              DIB_RGB_COLORS,
-	              SRCCOPY);
-
-	ReleaseDC(WindowHandle, DeviceContext);
 }
 
 win32_game_code
@@ -412,39 +341,6 @@ FillSoundOutput(game_audio_output_buffer *GameAudio, win32_audio_output *SoundOu
 	}
 }
 
-
-
-LRESULT CALLBACK
-WindowProcedure(HWND WindowHandle, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	// test
-	LRESULT Result;
-
-	switch (uMsg)
-	{
-		case WM_PAINT:
-		{
-		} break;
-
-		case WM_SIZE:
-		{
-			UpdateScreenSize(WindowHandle);
-		} break;
-
-		case WM_CLOSE:
-		{
-			GlobalRunning = false;
-		} break;
-
-		default:
-		{
-		} break;
-	}
-
-	Result = DefWindowProc(WindowHandle, uMsg, wParam, lParam);
-	return (Result);
-}
-
 inline LARGE_INTEGER
 GetWallClock()
 {
@@ -483,7 +379,7 @@ LoadState(char *FileName, game_memory *GameMemory, win32_game_code *GameCode)
 	DWORD BytesRead;
 	bool32 Success = ReadFile(FileHandle, GameMemory->GameMemoryBlock, (DWORD)GameMemory->TotalSize, &BytesRead, 0);
 
-	// 
+	//
 	GameCode->GameLoadAssets(GameMemory);
 
 	if (!Success)
@@ -561,307 +457,315 @@ GetGameCodeLastWriteTime()
 	return (LastWriteTime);
 }
 
-int CALLBACK
-WinMain(HINSTANCE Instance,	HINSTANCE PrevInstance,	LPSTR CommandLine, int ShowCode)
+int32 main (int32 argc, char **argv)
 {
-	WNDCLASS WindowClass = {};
-	WindowClass.style = CS_HREDRAW | CS_VREDRAW;
-	WindowClass.lpfnWndProc = WindowProcedure;
-	WindowClass.hInstance = Instance;
-	WindowClass.lpszClassName = "OriginTowerWindowClass";
-
-	if (RegisterClass(&WindowClass))
+	if (!glfwInit())
 	{
-		HWND WindowHandle =
-		    CreateWindowEx(
-		        0,
-		        WindowClass.lpszClassName,
-		        "Origin Tower",
-		        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-		        CW_USEDEFAULT,
-		        CW_USEDEFAULT,
-		        CW_USEDEFAULT,
-		        CW_USEDEFAULT,
-		        0,
-		        0,
-		        Instance,
-		        0);
-		if (WindowHandle)
+		Assert(0);
+		exit(EXIT_FAILURE);
+	}
+
+	ScreenBuffer = {};
+	ScreenBuffer.BackgroundColor.R = 0;
+	ScreenBuffer.BackgroundColor.G = 0;
+	ScreenBuffer.BackgroundColor.B = 0;
+	ScreenBuffer.Width = 1920;
+	ScreenBuffer.Height = 1080;
+
+	GLFWwindow* OpenGLWindow = glfwCreateWindow(ScreenBuffer.Width, ScreenBuffer.Height, "Origin Tower", NULL, NULL);
+	if (!OpenGLWindow)
+	{
+		glfwTerminate();
+		exit(EXIT_FAILURE);
+	}
+	glfwMakeContextCurrent(OpenGLWindow);
+	glClearColor(0.2f, 0.5f, 0.2f, 1.0f);
+
+	glMatrixMode(GL_PROJECTION);
+	glOrtho(0, ScreenBuffer.Width, ScreenBuffer.Height, 0, -10, 10);
+	glMatrixMode(GL_MODELVIEW);
+
+	LARGE_INTEGER FrequencyLong;
+	QueryPerformanceFrequency(&FrequencyLong);
+	PerfCountFrequency = FrequencyLong.QuadPart;
+
+	LARGE_INTEGER FlipWallClock = GetWallClock();
+
+	// Probably need to get this from hardware instead of pulling a number out of my ass
+	int32 MonitorUpdateHz = 60;
+	int32 GameUpdateHz = 60;
+	real64 TargetSecondsElapsedPerFrame = 1.0f / (real64)GameUpdateHz;
+
+	game_input GameInput = {};
+
+
+	#if INTERNAL
+	LPVOID BaseAddress = (LPVOID)Terrabytes((uint64)2);
+	#else
+	LPVOID BaseAddress = 0;
+	#endif
+	game_memory GameMemory = {};
+	GameMemory.PermanentStorageSize = Megabytes(64);
+	GameMemory.TransientStorageSize = Megabytes((uint64)1);
+	GameMemory.TotalSize = GameMemory.PermanentStorageSize + GameMemory.TransientStorageSize;
+
+	GameMemory.GameMemoryBlock = VirtualAlloc(BaseAddress, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	GameMemory.PermanentStorage = GameMemory.GameMemoryBlock;
+	GameMemory.TransientStorage = (uint8 *)GameMemory.PermanentStorage + GameMemory.PermanentStorageSize;
+	GameMemory.PlatformReadFile = PlatformReadFile;
+
+	LARGE_INTEGER PreviousFrameCount = GetWallClock();
+
+	win32_audio_output SoundOutput = {};
+	SoundOutput.SamplesPerSecond = 48000;
+	SoundOutput.RunningSampleIndex = 0;
+	SoundOutput.BytesPerSample = sizeof(int16) * 2;
+	SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSecond * SoundOutput.BytesPerSample;
+	SoundOutput.ToneVolume = 0.1f;
+	bool SoundIsValid = false;
+
+	int16 *AudioSamplesMemory = (int16 *)VirtualAlloc(0, SoundOutput.SecondaryBufferSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+
+	HWND WindowHandle = glfwGetWin32Window(OpenGLWindow);
+	LoadDirectSound(WindowHandle, &SoundOutput);
+	SoundSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
+
+	win32_game_code GameCode = LoadGameCode();
+	FILETIME GameCodeLastWriteTime = GetGameCodeLastWriteTime();
+
+	while (!glfwWindowShouldClose(OpenGLWindow) && GlobalRunning)
+	{
+		if (glfwWindowShouldClose(OpenGLWindow))
 		{
-			LARGE_INTEGER FrequencyLong;
-			QueryPerformanceFrequency(&FrequencyLong);
-			PerfCountFrequency = FrequencyLong.QuadPart;
-
-			LARGE_INTEGER FlipWallClock = GetWallClock();
-
-			// Probably need to get this from hardware instead of pulling a number out of my ass
-			int32 MonitorUpdateHz = 60;
-			int32 GameUpdateHz = 60;
-			real64 TargetSecondsElapsedPerFrame = 1.0f / (real64)GameUpdateHz;
-
-			game_input GameInput = {};
-
-			ScreenBuffer = {};
-			ScreenBuffer.BackgroundColor.R = 0;
-			ScreenBuffer.BackgroundColor.G = 0;
-			ScreenBuffer.BackgroundColor.B = 0;
-			UpdateScreenSize(WindowHandle);
-
-			FillPixels(&ScreenBuffer);
-			Assert(ScreenBuffer.ScreenBuffer !=  NULL);
+			GlobalRunning = false;
+		}
 
 
-			#if INTERNAL
-			LPVOID BaseAddress = (LPVOID)Terrabytes((uint64)2);
-			#else
-			LPVOID BaseAddress = 0;
-			#endif
-			game_memory GameMemory = {};
-			GameMemory.PermanentStorageSize = Megabytes(64);
-			GameMemory.TransientStorageSize = Megabytes((uint64)1);
-			GameMemory.TotalSize = GameMemory.PermanentStorageSize + GameMemory.TransientStorageSize;
+		FILETIME NewDLLWriteTime = GetGameCodeLastWriteTime();
+		if (CompareFileTime(&NewDLLWriteTime, &GameCodeLastWriteTime) != 0)
+		{
+			UnloadGameCode(&GameCode);
+			GameCode = LoadGameCode();
+			GameCodeLastWriteTime = NewDLLWriteTime;
+		}
 
-			GameMemory.GameMemoryBlock = VirtualAlloc(BaseAddress, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-			GameMemory.PermanentStorage = GameMemory.GameMemoryBlock;
-			GameMemory.TransientStorage = (uint8 *)GameMemory.PermanentStorage + GameMemory.PermanentStorageSize;
-			GameMemory.PlatformReadFile = PlatformReadFile;
+		DWORD dwResult;
+		for (DWORD ControllerIndex = 0;
+		     ControllerIndex < XUSER_MAX_COUNT;
+		     ControllerIndex++)
+		{
+			XINPUT_STATE ControllerState;
+			ZeroMemory(&ControllerState, sizeof(XINPUT_STATE));
 
-			LARGE_INTEGER PreviousFrameCount = GetWallClock();
+			dwResult = XInputGetState(ControllerIndex, &ControllerState);
 
-			win32_audio_output SoundOutput = {};
-			SoundOutput.SamplesPerSecond = 48000;
-			SoundOutput.RunningSampleIndex = 0;
-			SoundOutput.BytesPerSample = sizeof(int16) * 2;
-			SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSecond * SoundOutput.BytesPerSample;
-			SoundOutput.ToneVolume = 0.1f;
-			bool SoundIsValid = false;
-
-			int16 *AudioSamplesMemory = (int16 *)VirtualAlloc(0, SoundOutput.SecondaryBufferSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-
-			LoadDirectSound(WindowHandle, &SoundOutput);
-			SoundSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
-
-			win32_game_code GameCode = LoadGameCode();
-			FILETIME GameCodeLastWriteTime = GetGameCodeLastWriteTime();
-
-			while (GlobalRunning)
+			if (dwResult == ERROR_SUCCESS)
 			{
-				MSG Message;
-				while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
-				{
-					switch (Message.message)
-					{
-						default:
-						{
-							TranslateMessage(&Message);
-							DispatchMessage(&Message);
-						} break;
-					}
-				}
+				XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
 
-				FILETIME NewDLLWriteTime = GetGameCodeLastWriteTime();
-				if (CompareFileTime(&NewDLLWriteTime, &GameCodeLastWriteTime) != 0)
-				{
-					UnloadGameCode(&GameCode);
-					GameCode = LoadGameCode();
-					GameCodeLastWriteTime = NewDLLWriteTime;
-				}
+				ProcessButtonInput(&GameInput.AButton, Pad->wButtons & XINPUT_GAMEPAD_A);
+				ProcessButtonInput(&GameInput.BButton, Pad->wButtons & XINPUT_GAMEPAD_B);
+				ProcessButtonInput(&GameInput.XButton, Pad->wButtons & XINPUT_GAMEPAD_X);
+				ProcessButtonInput(&GameInput.YButton, Pad->wButtons & XINPUT_GAMEPAD_Y);
 
-				DWORD dwResult;
-				for (DWORD ControllerIndex = 0;
-				     ControllerIndex < XUSER_MAX_COUNT;
-				     ControllerIndex++)
-				{
-					XINPUT_STATE ControllerState;
-					ZeroMemory(&ControllerState, sizeof(XINPUT_STATE));
+				ProcessButtonInput(&GameInput.DUp, Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
+				ProcessButtonInput(&GameInput.DDown, Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+				ProcessButtonInput(&GameInput.DLeft, Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
+				ProcessButtonInput(&GameInput.DRight, Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
 
-					dwResult = XInputGetState(ControllerIndex, &ControllerState);
+				ProcessButtonInput(&GameInput.R1, Pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
+				ProcessButtonInput(&GameInput.L1, Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
+				ProcessTriggerInput(&GameInput.R2, Pad->bRightTrigger);
+				ProcessTriggerInput(&GameInput.L2, Pad->bLeftTrigger);
 
-					if (dwResult == ERROR_SUCCESS)
-					{
-						XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
+				ProcessButtonInput(&GameInput.Start, Pad->wButtons & XINPUT_GAMEPAD_START);
+				ProcessButtonInput(&GameInput.Select, Pad->wButtons & XINPUT_GAMEPAD_BACK);
 
-						ProcessButtonInput(&GameInput.AButton, Pad->wButtons & XINPUT_GAMEPAD_A);
-						ProcessButtonInput(&GameInput.BButton, Pad->wButtons & XINPUT_GAMEPAD_B);
-						ProcessButtonInput(&GameInput.XButton, Pad->wButtons & XINPUT_GAMEPAD_X);
-						ProcessButtonInput(&GameInput.YButton, Pad->wButtons & XINPUT_GAMEPAD_Y);
+				GameInput.LeftStick.X = ClampValue(-0.9f, 0.9f, CheckStickDeadzone(Pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE));
+				GameInput.LeftStick.Y = ClampValue(-0.9f, 0.9f, CheckStickDeadzone(Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)) * -1;
 
-						ProcessButtonInput(&GameInput.DUp, Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
-						ProcessButtonInput(&GameInput.DDown, Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
-						ProcessButtonInput(&GameInput.DLeft, Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
-						ProcessButtonInput(&GameInput.DRight, Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
-
-						ProcessButtonInput(&GameInput.R1, Pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
-						ProcessButtonInput(&GameInput.L1, Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
-						ProcessTriggerInput(&GameInput.R2, Pad->bRightTrigger);
-						ProcessTriggerInput(&GameInput.L2, Pad->bLeftTrigger);
-
-						ProcessButtonInput(&GameInput.Start, Pad->wButtons & XINPUT_GAMEPAD_START);
-						ProcessButtonInput(&GameInput.Select, Pad->wButtons & XINPUT_GAMEPAD_BACK);
-
-						GameInput.LeftStick.X = ClampValue(-0.9f, 0.9f, CheckStickDeadzone(Pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE));
-						GameInput.LeftStick.Y = ClampValue(-0.9f, 0.9f, CheckStickDeadzone(Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)) * -1;
-
-					}
-					else
-					{
-						// Controller is not connected
-					}
-				}
-
-
-				char *Slot1Name = "StateSlot1.ss";
-				char *Slot2Name = "StateSlot2.ss";
-				char *Slot3Name = "StateSlot3.ss";
-				char *Slot4Name = "StateSlot4.ss";
-				if (GameInput.R1.OnDown && GameInput.Select.IsDown)
-				{
-					SaveSate(Slot1Name, &GameMemory);
-				}
-				if (GameInput.R1.OnDown && !GameInput.Select.IsDown)
-				{
-					LoadState(Slot1Name, &GameMemory, &GameCode);
-					FillPixels(&ScreenBuffer);
-				}
-
-				if (GameInput.L1.OnDown && GameInput.Select.IsDown)
-				{
-					SaveSate(Slot2Name, &GameMemory);
-				}
-				if (GameInput.L1.OnDown && !GameInput.Select.IsDown)
-				{
-					LoadState(Slot2Name, &GameMemory, &GameCode);
-					FillPixels(&ScreenBuffer);
-				}
-
-				if (GameInput.R2.OnDown && GameInput.Select.IsDown)
-				{
-					SaveSate(Slot3Name, &GameMemory);
-				}
-				if (GameInput.R2.OnDown && !GameInput.Select.IsDown)
-				{
-					LoadState(Slot3Name, &GameMemory, &GameCode);
-					FillPixels(&ScreenBuffer);
-				}
-
-				if (GameInput.L2.OnDown && GameInput.Select.IsDown)
-				{
-					SaveSate(Slot4Name, &GameMemory);
-				}
-				if (GameInput.L2.OnDown && !GameInput.Select.IsDown)
-				{
-					LoadState(Slot4Name, &GameMemory, &GameCode);
-					FillPixels(&ScreenBuffer);
-				}
-
-				LARGE_INTEGER AudioWallClock = GetWallClock();
-				real32 FromBeginToAudioSeconds = GetSecondsElapsed(FlipWallClock, AudioWallClock);
-
-				DWORD PlayCursor;
-				DWORD WriteCursor;
-				game_audio_output_buffer GameAudio = {};
-				DWORD BytesToWrite = 0;
-				DWORD ByteToLock = 0;
-				if (SoundSecondaryBuffer->GetCurrentPosition(&PlayCursor, &WriteCursor) == DS_OK)
-				{
-					if (!SoundIsValid)
-					{
-						SoundOutput.RunningSampleIndex = WriteCursor / SoundOutput.BytesPerSample;
-						SoundIsValid = true;
-					}
-
-					ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample) %
-					             SoundOutput.SecondaryBufferSize;
-
-
-					DWORD ExpectedSoundBytesPerFrame = (int)(((real32)(SoundOutput.SamplesPerSecond *
-					                                   SoundOutput.BytesPerSample)) /  GameUpdateHz);
-					real64 SecondsLeftUntilFlip = (TargetSecondsElapsedPerFrame - FromBeginToAudioSeconds);
-					DWORD ExpectedBytesUntilFlip = (DWORD)((SecondsLeftUntilFlip / TargetSecondsElapsedPerFrame
-					                                       ) * (real32)ExpectedSoundBytesPerFrame);
-
-					DWORD ExpectedFrameBoundaryByte = PlayCursor + ExpectedBytesUntilFlip;
-
-					DWORD SafeWriteCursor = WriteCursor;
-					if (SafeWriteCursor < PlayCursor)
-					{
-						SafeWriteCursor += SoundOutput.SecondaryBufferSize;
-					}
-					Assert(SafeWriteCursor >= PlayCursor);
-					SafeWriteCursor += SoundOutput.SafetyBytes;
-
-					bool32 AudioCardIsLowLatency = (SafeWriteCursor < ExpectedFrameBoundaryByte);
-
-					DWORD TargetCursor = 0;
-					if (AudioCardIsLowLatency)
-					{
-						TargetCursor = (ExpectedFrameBoundaryByte + ExpectedSoundBytesPerFrame);
-					}
-					else
-					{
-						TargetCursor = (WriteCursor + ExpectedSoundBytesPerFrame + SoundOutput.SafetyBytes);
-					}
-					TargetCursor = TargetCursor % SoundOutput.SecondaryBufferSize;
-
-					if (ByteToLock > TargetCursor)
-					{
-						BytesToWrite = (SoundOutput.SecondaryBufferSize - ByteToLock) + TargetCursor;
-					}
-					else
-					{
-						BytesToWrite = TargetCursor - ByteToLock;
-					}
-
-					GameAudio.SamplesPerSecond = SoundOutput.SamplesPerSecond;
-					GameAudio.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;
-					GameAudio.Samples = AudioSamplesMemory;
-				}
-
-				GameCode.GameLoop(&GameMemory, &GameInput, &ScreenBuffer, &GameAudio);
-				FillSoundOutput(&GameAudio, &SoundOutput, ByteToLock, BytesToWrite);
-
-				game_state *GameStateFromMemory = (game_state *)GameMemory.PermanentStorage; 
-				char *EmptyChar = "";
-				if (GameStateFromMemory->DebugOutput &&
-				    GameStateFromMemory->DebugOutput != EmptyChar)
-				{
-					DebugLine(GameStateFromMemory->DebugOutput);
-					GameStateFromMemory->DebugOutput = EmptyChar;
-				}
-
-				DrawPixels(WindowHandle);
-
-				LARGE_INTEGER WorkFrameCount = GetWallClock();
-				ElapsedFrameCount = WorkFrameCount.QuadPart - PreviousFrameCount.QuadPart;
-
-				real64 SecondsElapsedForWork = (real64)ElapsedFrameCount / (real64)PerfCountFrequency;
-				real64 SecondsElapsedForFrame = SecondsElapsedForWork;
-				while (SecondsElapsedForFrame < TargetSecondsElapsedPerFrame)
-				{
-					LARGE_INTEGER NewWorkFrameCount = GetWallClock();
-					SecondsElapsedForFrame = (((real64)NewWorkFrameCount.QuadPart - PreviousFrameCount.QuadPart) /
-					                          (real64)PerfCountFrequency);
-				}
-
-				WorkFrameCount = GetWallClock();
-
-				ElapsedFrameCount = WorkFrameCount.QuadPart - PreviousFrameCount.QuadPart;
-				int64 MSThisFrame = (1000 * ElapsedFrameCount) / PerfCountFrequency;
-
-				// NOTE game is forced at 60 fps. Anything smaller doesn't work.
-				int64 FPS = PerfCountFrequency / ElapsedFrameCount;
-				char charFPS[MAX_PATH] = {};
-				ConcatIntChar(FPS, " FPS", charFPS);
-				if (GameStateFromMemory->PrintFPS)
-				{
-					DebugLine(charFPS);
-				}
-
-				PreviousFrameCount = WorkFrameCount;
-				GameMemory.ElapsedCycles = PreviousFrameCount.QuadPart;
-
-				FlipWallClock = GetWallClock();
+			}
+			else
+			{
+				// Controller is not connected
 			}
 		}
+
+
+		char *Slot1Name = "StateSlot1.ss";
+		char *Slot2Name = "StateSlot2.ss";
+		char *Slot3Name = "StateSlot3.ss";
+		char *Slot4Name = "StateSlot4.ss";
+		// NOTE might need to redraw or clear the buffer in opengl here
+		if (GameInput.R1.OnDown && GameInput.Select.IsDown)
+		{
+			SaveSate(Slot1Name, &GameMemory);
+		}
+		if (GameInput.R1.OnDown && !GameInput.Select.IsDown)
+		{
+			LoadState(Slot1Name, &GameMemory, &GameCode);
+		}
+
+		if (GameInput.L1.OnDown && GameInput.Select.IsDown)
+		{
+			SaveSate(Slot2Name, &GameMemory);
+		}
+		if (GameInput.L1.OnDown && !GameInput.Select.IsDown)
+		{
+			LoadState(Slot2Name, &GameMemory, &GameCode);
+		}
+
+		if (GameInput.R2.OnDown && GameInput.Select.IsDown)
+		{
+			SaveSate(Slot3Name, &GameMemory);
+		}
+		if (GameInput.R2.OnDown && !GameInput.Select.IsDown)
+		{
+			LoadState(Slot3Name, &GameMemory, &GameCode);
+		}
+
+		if (GameInput.L2.OnDown && GameInput.Select.IsDown)
+		{
+			SaveSate(Slot4Name, &GameMemory);
+		}
+		if (GameInput.L2.OnDown && !GameInput.Select.IsDown)
+		{
+			LoadState(Slot4Name, &GameMemory, &GameCode);
+		}
+
+		LARGE_INTEGER AudioWallClock = GetWallClock();
+		real32 FromBeginToAudioSeconds = GetSecondsElapsed(FlipWallClock, AudioWallClock);
+
+		DWORD PlayCursor;
+		DWORD WriteCursor;
+		game_audio_output_buffer GameAudio = {};
+		DWORD BytesToWrite = 0;
+		DWORD ByteToLock = 0;
+		if (SoundSecondaryBuffer->GetCurrentPosition(&PlayCursor, &WriteCursor) == DS_OK)
+		{
+			if (!SoundIsValid)
+			{
+				SoundOutput.RunningSampleIndex = WriteCursor / SoundOutput.BytesPerSample;
+				SoundIsValid = true;
+			}
+
+			ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample) %
+			             SoundOutput.SecondaryBufferSize;
+
+
+			DWORD ExpectedSoundBytesPerFrame = (int)(((real32)(SoundOutput.SamplesPerSecond *
+			                                   SoundOutput.BytesPerSample)) /  GameUpdateHz);
+			real64 SecondsLeftUntilFlip = (TargetSecondsElapsedPerFrame - FromBeginToAudioSeconds);
+			DWORD ExpectedBytesUntilFlip = (DWORD)((SecondsLeftUntilFlip / TargetSecondsElapsedPerFrame
+			                                       ) * (real32)ExpectedSoundBytesPerFrame);
+
+			DWORD ExpectedFrameBoundaryByte = PlayCursor + ExpectedBytesUntilFlip;
+
+			DWORD SafeWriteCursor = WriteCursor;
+			if (SafeWriteCursor < PlayCursor)
+			{
+				SafeWriteCursor += SoundOutput.SecondaryBufferSize;
+			}
+			Assert(SafeWriteCursor >= PlayCursor);
+			SafeWriteCursor += SoundOutput.SafetyBytes;
+
+			bool32 AudioCardIsLowLatency = (SafeWriteCursor < ExpectedFrameBoundaryByte);
+
+			DWORD TargetCursor = 0;
+			if (AudioCardIsLowLatency)
+			{
+				TargetCursor = (ExpectedFrameBoundaryByte + ExpectedSoundBytesPerFrame);
+			}
+			else
+			{
+				TargetCursor = (WriteCursor + ExpectedSoundBytesPerFrame + SoundOutput.SafetyBytes);
+			}
+			TargetCursor = TargetCursor % SoundOutput.SecondaryBufferSize;
+
+			if (ByteToLock > TargetCursor)
+			{
+				BytesToWrite = (SoundOutput.SecondaryBufferSize - ByteToLock) + TargetCursor;
+			}
+			else
+			{
+				BytesToWrite = TargetCursor - ByteToLock;
+			}
+
+			GameAudio.SamplesPerSecond = SoundOutput.SamplesPerSecond;
+			GameAudio.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;
+			GameAudio.Samples = AudioSamplesMemory;
+		}
+
+		GameCode.GameLoop(&GameMemory, &GameInput, &ScreenBuffer, &GameAudio);
+		FillSoundOutput(&GameAudio, &SoundOutput, ByteToLock, BytesToWrite);
+
+		game_state *GameStateFromMemory = (game_state *)GameMemory.PermanentStorage;
+		char *EmptyChar = "";
+		if (GameStateFromMemory->DebugOutput &&
+		    GameStateFromMemory->DebugOutput != EmptyChar)
+		{
+			DebugLine(GameStateFromMemory->DebugOutput);
+			GameStateFromMemory->DebugOutput = EmptyChar;
+		}
+
+		glClear(GL_COLOR_BUFFER_BIT);
+		// NOTE opengl render / display here
+		for (uint32 SquareIndex = 0;
+		     SquareIndex < GameStateFromMemory->SquareCount;
+		     SquareIndex++)
+		{
+			glBegin(GL_QUADS);
+			{
+				gl_square *Square = GameStateFromMemory->GLSquares[SquareIndex];
+				glColor3f((GLfloat)(Square->Color.R / 255), (GLfloat)(Square->Color.G / 255), (GLfloat)(Square->Color.B / 255));
+				// NOTE the order of this can't be changed. Though I can't find any documentation on why or what the correct order is, but this works.
+				glVertex2d(Square->TopRight.X, Square->TopRight.Y);
+				glVertex2d(Square->TopLeft.X, Square->TopLeft.Y);
+				glVertex2d(Square->BottomLeft.X, Square->BottomLeft.Y);
+				glVertex2d(Square->BottomRight.X, Square->BottomRight.Y);
+			}
+			glEnd();
+		}
+
+		
+
+
+		glfwSwapBuffers(OpenGLWindow);
+
+		LARGE_INTEGER WorkFrameCount = GetWallClock();
+		ElapsedFrameCount = WorkFrameCount.QuadPart - PreviousFrameCount.QuadPart;
+
+		real64 SecondsElapsedForWork = (real64)ElapsedFrameCount / (real64)PerfCountFrequency;
+		real64 SecondsElapsedForFrame = SecondsElapsedForWork;
+		while (SecondsElapsedForFrame < TargetSecondsElapsedPerFrame)
+		{
+			LARGE_INTEGER NewWorkFrameCount = GetWallClock();
+			SecondsElapsedForFrame = (((real64)NewWorkFrameCount.QuadPart - PreviousFrameCount.QuadPart) /
+			                          (real64)PerfCountFrequency);
+		}
+
+		WorkFrameCount = GetWallClock();
+
+		ElapsedFrameCount = WorkFrameCount.QuadPart - PreviousFrameCount.QuadPart;
+		int64 MSThisFrame = (1000 * ElapsedFrameCount) / PerfCountFrequency;
+
+		// NOTE game is forced at 60 fps. Anything smaller doesn't work.
+		int64 FPS = PerfCountFrequency / ElapsedFrameCount;
+		char charFPS[MAX_PATH] = {};
+		ConcatIntChar(FPS, " FPS", charFPS);
+		if (GameStateFromMemory->PrintFPS)
+		{
+			DebugLine(charFPS);
+		}
+
+		PreviousFrameCount = WorkFrameCount;
+		GameMemory.ElapsedCycles = PreviousFrameCount.QuadPart;
+
+		FlipWallClock = GetWallClock();
+
+		glfwPollEvents();
 	}
+
+	glfwDestroyWindow(OpenGLWindow);
+	glfwTerminate();
 }

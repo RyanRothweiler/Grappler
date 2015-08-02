@@ -72,6 +72,16 @@ vector2 operator*(vector2 A, vector2 B)
 	return (Output);
 }
 
+bool32 operator>(vector2 A, int32 B)
+{
+	if (A.X > B &&
+	    A.Y > B)
+	{
+		return(true);
+	}
+	return(false);
+}
+
 vector2
 NormalizeVector2(vector2 Input)
 {
@@ -84,7 +94,7 @@ NormalizeVector2(vector2 Input)
 	return (Output);
 }
 
-real64 
+real64
 Vector2Distance(vector2 A, vector2 B)
 {
 	real64 Output = 0;

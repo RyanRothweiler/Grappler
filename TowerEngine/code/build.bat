@@ -1,7 +1,8 @@
 @echo off
 
+set GLFWPath= C:\Users\Ryan\Documents\OriginTower\TowerEngine\code\GLFW\glfw3dll.lib 
 set CommonCompilerFlags=-MTd -nologo -fp:fast -Gm- -GR- -EHa- -Od -Oi -WX -W4 -wd4201 -wd4100 -wd4127 -wd4189 -wd4505  -wd4065 -wd4700 -FC -Z7
-set CommonLinkerFlags= -incremental:no -opt:ref user32.lib gdi32.lib winmm.lib Xinput.lib
+set CommonLinkerFlags= -incremental:no -opt:ref user32.lib gdi32.lib winmm.lib Xinput.lib opengl32.lib %GLFWPath%
 set BuildVariables= -DINTERNAL=1 -DSLOW=1
 
 
