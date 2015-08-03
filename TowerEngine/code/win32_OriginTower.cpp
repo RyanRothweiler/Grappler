@@ -522,6 +522,7 @@ int32 main (int32 argc, char **argv)
 	glMatrixMode(GL_PROJECTION);
 	glOrtho(0, ScreenBuffer.Width, ScreenBuffer.Height, 0, -10, 10);
 	glMatrixMode(GL_MODELVIEW);
+	glDisable(GL_DEPTH_TEST);
 
 	LARGE_INTEGER FrequencyLong;
 	QueryPerformanceFrequency(&FrequencyLong);
@@ -748,25 +749,39 @@ int32 main (int32 argc, char **argv)
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// for (uint32 SquareIndex = 0;
-		//      SquareIndex < GameStateFromMemory->SquareCount;
-		//      SquareIndex++)
-		// {
-		// 	glBegin(GL_QUADS);
-		// 	{
-		// 		gl_square *Square = GameStateFromMemory->GLSquares[SquareIndex];
-		// 		glColor3f((GLfloat)(Square->Color.R / 255), (GLfloat)(Square->Color.G / 255), (GLfloat)(Square->Color.B / 255));
-		// 		// NOTE the order of this can't be changed. Though I can't find any documentation on why or what the correct order is, but this works.
-		// 		glVertex2d(Square->TopRight.X, Square->TopRight.Y);
-		// 		glVertex2d(Square->TopLeft.X, Square->TopLeft.Y);
-		// 		glVertex2d(Square->BottomLeft.X, Square->BottomLeft.Y);
-		// 		glVertex2d(Square->BottomRight.X, Square->BottomRight.Y);
-		// 	}
-		// 	glEnd();
-		// }
-		
-		glDrawPixels(ScreenBuffer.Width, ScreenBuffer.Height,
-		             GL_RGBA, GL_UNSIGNED_BYTE, ScreenBuffer.ScreenBuffer);
+		for (uint32 SquareIndex = 0;
+		     SquareIndex < GameStateFromMemory->SquareCount;
+		     SquareIndex++)
+		{
+			glBegin(GL_QUADS);
+			{
+				gl_square *Square = GameStateFromMemory->GLSquares[SquareIndex];
+				glColor3f((GLfloat)(Square->Color.R / 255), (GLfloat)(Square->Color.G / 255), (GLfloat)(Square->Color.B / 255));
+				// NOTE the order of this can't be changed. Though I can't find any documentation on why or what the correct order is, but this works.
+				glVertex2d(Square->TopRight.X, Square->TopRight.Y);
+				glVertex2d(Square->TopLeft.X, Square->TopLeft.Y);
+				glVertex2d(Square->BottomLeft.X, Square->BottomLeft.Y);
+				glVertex2d(Square->BottomRight.X, Square->BottomRight.Y);
+			}
+			glEnd();
+		}
+
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, GameStateFromMemory->BackgroundImage.GLTexture);
+
+		glBegin(GL_QUADS);
+		{
+			glColor3f(1.0f, 1.0f, 1.0f);
+			glTexCoord2f(0, 0); glVertex2f(100, 100);
+			glTexCoord2f(1, 0); glVertex2f(100, 200);
+			glTexCoord2f(1, 1); glVertex2f(200, 200);
+			glTexCoord2f(0, 1); glVertex2f(200, 100);
+		}
+		glEnd();
+
+
+		// glDrawPixels(ScreenBuffer.Width, ScreenBuffer.Height,
+		//              GL_RGBA, GL_UNSIGNED_BYTE, ScreenBuffer.ScreenBuffer);
 
 		glfwSwapBuffers(OpenGLWindow);
 

@@ -1,15 +1,12 @@
  General:
-   ☐ opengl drawing bitmap
-   ☐ render bitmap background with opengl
-   ☐ test background moving with camera
    ☐ strip out all old windows software rendering code
    ☐ try to pull save state code out into methods
    ☐ switch color constants to #defines? Is this a good idea?
-
    ☐ smooth camera follower
    ☐ player takes damage
    ☐ use git command line to commit the project
    ☐ put in safeguards so when loading a savestate from a previous version it doesn't crash
+   ☐ why is player black?
 
  UI:
    ☐ ui button with normal / selected / down states
@@ -30,6 +27,10 @@
 Graphics:
    ☐ create a render order
    ☐ allow the winow to resize. The pixel buffer doesn't update its size when the window resizes.
+   ☐ transparent bitmaps
+   ☐ opengl drawing bitmap
+   ☐ render bitmap background with opengl
+   ☐ test background moving with camera
 
 Color:
    ☐ Change color to use floats (0.0 - 1.0) instead of (0 - 255)

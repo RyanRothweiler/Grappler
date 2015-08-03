@@ -61,69 +61,69 @@ DrawSquare(vector2 Pos, uint32 squareSize, color Color, screen_buffer *ScreenBuf
 void
 DrawBMP(loaded_image *Image, vector2 Pos, screen_buffer *ScreenBuffer)
 {
-	// TODO convert this to opengl rendering
-	vector2 Min = vector2{Pos.X - (Image->Width / 2), Pos.Y - (Image->Height / 2)};
-	vector2 Max = vector2{Pos.X + (Image->Width / 2), Pos.Y + (Image->Height / 2)};
+	// // TODO convert this to opengl rendering
+	// vector2 Min = vector2{Pos.X - (Image->Width / 2), Pos.Y - (Image->Height / 2)};
+	// vector2 Max = vector2{Pos.X + (Image->Width / 2), Pos.Y + (Image->Height / 2)};
 
-	if (Min.X < 0)
-	{
-		Min.X = 0;
-	}
-	if (Min.Y < 0)
-	{
-		Min.Y = 0;
-	}
-	if (Max.X > (int32)ScreenBuffer->Width)
-	{
-		Max.X = (int32)ScreenBuffer->Width;
-	}
-	if (Max.Y > (int32)ScreenBuffer->Height)
-	{
-		Max.Y = (int32)ScreenBuffer->Height;
-	}
+	// if (Min.X < 0)
+	// {
+	// 	Min.X = 0;
+	// }
+	// if (Min.Y < 0)
+	// {
+	// 	Min.Y = 0;
+	// }
+	// if (Max.X > (int32)ScreenBuffer->Width)
+	// {
+	// 	Max.X = (int32)ScreenBuffer->Width;
+	// }
+	// if (Max.Y > (int32)ScreenBuffer->Height)
+	// {
+	// 	Max.Y = (int32)ScreenBuffer->Height;
+	// }
 
-	if (Max > 0)
-	{
-		// Move to the correct column
-		uint32 *SourceRow = {};
-		if (Image->Height > (uint32)Max.Y)
-		{
-			SourceRow = Image->Pixels + (Image->Width * ((int32)Max.Y - 1));
-		}
-		else
-		{
-			SourceRow = Image->Pixels + (Image->Width * (Image->Height - 1));
-		}
+	// if (Max > 0)
+	// {
+	// 	// Move to the correct column
+	// 	uint32 *SourceRow = {};
+	// 	if (Image->Height > (uint32)Max.Y)
+	// 	{
+	// 		SourceRow = Image->Pixels + (Image->Width * ((int32)Max.Y - 1));
+	// 	}
+	// 	else
+	// 	{
+	// 		SourceRow = Image->Pixels + (Image->Width * (Image->Height - 1));
+	// 	}
 
-		// Move to the correct row in that column
-		if (Pos.X - (Image->Width / 2) < 0)
-		{
-			SourceRow -= (int32)(Pos.X - (Image->Width / 2));
-		}
+	// 	// Move to the correct row in that column
+	// 	if (Pos.X - (Image->Width / 2) < 0)
+	// 	{
+	// 		SourceRow -= (int32)(Pos.X - (Image->Width / 2));
+	// 	}
 
-		uint32 Pitch = ScreenBuffer->Width * ScreenBuffer->BytesPerPixel;
-		uint8 *DestRow = (uint8 *)ScreenBuffer->ScreenBuffer + (((int32)Min.X * ScreenBuffer->BytesPerPixel) + ((int32)Min.Y * Pitch));
-		for (uint32 Y = (int32)Min.Y;
-		     Y < (uint32)Max.Y;
-		     ++Y)
-		{
-			uint32 *Dest = (uint32 *)DestRow;
-			uint8 *Source = (uint8 *)SourceRow;
-			for (uint32 X = (int32)Min.X;
-			     X < (uint32)Max.X;
-			     ++X)
-			{
-				uint8 Bit2 = *Source++; // A
-				uint8 Bit1 = *Source++; // R
-				uint8 Bit0 = *Source++; // G
-				uint8 Bit3 = *Source++; // B
+	// 	uint32 Pitch = ScreenBuffer->Width * ScreenBuffer->BytesPerPixel;
+	// 	uint8 *DestRow = (uint8 *)ScreenBuffer->ScreenBuffer + (((int32)Min.X * ScreenBuffer->BytesPerPixel) + ((int32)Min.Y * Pitch));
+	// 	for (uint32 Y = (int32)Min.Y;
+	// 	     Y < (uint32)Max.Y;
+	// 	     ++Y)
+	// 	{
+	// 		uint32 *Dest = (uint32 *)DestRow;
+	// 		uint8 *Source = (uint8 *)SourceRow;
+	// 		for (uint32 X = (int32)Min.X;
+	// 		     X < (uint32)Max.X;
+	// 		     ++X)
+	// 		{
+	// 			uint8 Bit2 = *Source++; // A
+	// 			uint8 Bit1 = *Source++; // R
+	// 			uint8 Bit0 = *Source++; // G
+	// 			uint8 Bit3 = *Source++; // B
 
-				*Dest++ = (Bit0 << 24) | (Bit1 << 16) | (Bit2 << 8) | (Bit3 << 0);
-			}
-			DestRow += Pitch;
-			SourceRow -= Image->Width;
-		}
-	}
+	// 			*Dest++ = (Bit0 << 24) | (Bit1 << 16) | (Bit2 << 8) | (Bit3 << 0);
+	// 		}
+	// 		DestRow += Pitch;
+	// 		SourceRow -= Image->Width;
+	// 	}
+	// }
 }
 
 int64
@@ -316,12 +316,12 @@ LoadWave(char *FilePath)
 
 
 loaded_image
-LoadBMP(char *FilePath)
+GLLoadBMP(char *FilePath)
 {
 	loaded_image Result = {};
 
-	//NOTE this is the loading the wave file code. Maybe all this should be pulled into the game layer
 	read_file_result FileResult = PlatformReadFile(FilePath);
+	uint32 *BitmapPixels = {};
 	if (FileResult.ContentsSize != 0)
 	{
 		bmp_header *Header = (bmp_header *)FileResult.Contents;
@@ -329,8 +329,18 @@ LoadBMP(char *FilePath)
 		Result.Height = Header->Height;
 
 		// NOTE this number offset here is pulled from my ass. The offset in the image doesn't seem to work.
-		Result.Pixels = ((uint32 *)FileResult.Contents + 35);
+		BitmapPixels = ((uint32 *)FileResult.Contents + 35);
 	}
+
+	glGenTextures(1, &Result.GLTexture);
+	glBindTexture(GL_TEXTURE_2D, Result.GLTexture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+	             Result.Width, Result.Height,
+	             0, GL_RGBA, GL_UNSIGNED_BYTE, BitmapPixels);
 
 	return (Result);
 }
@@ -344,19 +354,7 @@ LoadAssets(game_state *GameState)
 	GameState->TestNoteSampleIndex = 0;
 	GameState->TestNote = LoadWave("../assets/testNote.wav");
 
-	GameState->BackgroundImage = {};
-	GameState->BackgroundImage.GLIndex = 10;
-	glGenTextures(GameState->BackgroundImage.GLIndex, &GameState->BackgroundImage.GLTexture);
-	glBindTexture(GL_TEXTURE_2D, GameState->BackgroundImage.GLTexture);
-
-	// NOTE maybe chagne the return value of LoadBMP
-	loaded_image LoadedImage = LoadBMP("../assets/Background.bmp");
-	GameState->BackgroundImage.Width = LoadedImage.Width;
-	GameState->BackgroundImage.Height = LoadedImage.Height;
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-	             GameState->BackgroundImage.Width, GameState->BackgroundImage.Height,
-	             0, GL_RGBA, GL_UNSIGNED_BYTE, LoadedImage.Pixels);
+	GameState->BackgroundImage = GLLoadBMP("../assets/TestImage.bmp");
 
 	// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
 	DebugLine("Loaded", GameState);
