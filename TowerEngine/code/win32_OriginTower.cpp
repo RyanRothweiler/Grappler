@@ -379,7 +379,6 @@ LoadState(char *FileName, game_memory *GameMemory, win32_game_code *GameCode)
 	DWORD BytesRead;
 	bool32 Success = ReadFile(FileHandle, GameMemory->GameMemoryBlock, (DWORD)GameMemory->TotalSize, &BytesRead, 0);
 
-	//
 	GameCode->GameLoadAssets(GameMemory);
 
 	if (!Success)
@@ -457,6 +456,41 @@ GetGameCodeLastWriteTime()
 	return (LastWriteTime);
 }
 
+void
+FillPixels(screen_buffer *ScreenBuffer)
+{
+	uint8 *Row = (uint8 *)ScreenBuffer->ScreenBuffer;
+	for (uint32 Y = 0;
+	     Y < ScreenBuffer->Height;
+	     ++Y)
+	{
+		uint8 *Pixel = (uint8 *)Row;
+		for (uint32 X = 0;
+		     X < ScreenBuffer->Width;
+		     ++X)
+		{
+			// B
+			*Pixel = ScreenBuffer->BackgroundColor.B;
+			++Pixel;
+
+			// G
+			*Pixel = ScreenBuffer->BackgroundColor.G;
+			++Pixel;
+
+			// R
+			*Pixel = ScreenBuffer->BackgroundColor.R;
+			++Pixel;
+
+			// A?
+			*Pixel = ScreenBuffer->BackgroundColor.A;
+			++Pixel;
+
+		}
+		uint32 Pitch = ScreenBuffer->Width * ScreenBuffer->BytesPerPixel;
+		Row += Pitch;
+	}
+}
+
 int32 main (int32 argc, char **argv)
 {
 	if (!glfwInit())
@@ -471,6 +505,10 @@ int32 main (int32 argc, char **argv)
 	ScreenBuffer.BackgroundColor.B = 0;
 	ScreenBuffer.Width = 1920;
 	ScreenBuffer.Height = 1080;
+
+	uint32 MemSize = ScreenBuffer.Width * ScreenBuffer.Height * ScreenBuffer.BytesPerPixel;
+	ScreenBuffer.ScreenBuffer =  VirtualAlloc(0, MemSize, MEM_COMMIT, PAGE_READWRITE);
+	FillPixels(&ScreenBuffer);
 
 	GLFWwindow* OpenGLWindow = glfwCreateWindow(ScreenBuffer.Width, ScreenBuffer.Height, "Origin Tower", NULL, NULL);
 	if (!OpenGLWindow)
@@ -709,26 +747,26 @@ int32 main (int32 argc, char **argv)
 		}
 
 		glClear(GL_COLOR_BUFFER_BIT);
-		// NOTE opengl render / display here
-		for (uint32 SquareIndex = 0;
-		     SquareIndex < GameStateFromMemory->SquareCount;
-		     SquareIndex++)
-		{
-			glBegin(GL_QUADS);
-			{
-				gl_square *Square = GameStateFromMemory->GLSquares[SquareIndex];
-				glColor3f((GLfloat)(Square->Color.R / 255), (GLfloat)(Square->Color.G / 255), (GLfloat)(Square->Color.B / 255));
-				// NOTE the order of this can't be changed. Though I can't find any documentation on why or what the correct order is, but this works.
-				glVertex2d(Square->TopRight.X, Square->TopRight.Y);
-				glVertex2d(Square->TopLeft.X, Square->TopLeft.Y);
-				glVertex2d(Square->BottomLeft.X, Square->BottomLeft.Y);
-				glVertex2d(Square->BottomRight.X, Square->BottomRight.Y);
-			}
-			glEnd();
-		}
 
+		// for (uint32 SquareIndex = 0;
+		//      SquareIndex < GameStateFromMemory->SquareCount;
+		//      SquareIndex++)
+		// {
+		// 	glBegin(GL_QUADS);
+		// 	{
+		// 		gl_square *Square = GameStateFromMemory->GLSquares[SquareIndex];
+		// 		glColor3f((GLfloat)(Square->Color.R / 255), (GLfloat)(Square->Color.G / 255), (GLfloat)(Square->Color.B / 255));
+		// 		// NOTE the order of this can't be changed. Though I can't find any documentation on why or what the correct order is, but this works.
+		// 		glVertex2d(Square->TopRight.X, Square->TopRight.Y);
+		// 		glVertex2d(Square->TopLeft.X, Square->TopLeft.Y);
+		// 		glVertex2d(Square->BottomLeft.X, Square->BottomLeft.Y);
+		// 		glVertex2d(Square->BottomRight.X, Square->BottomRight.Y);
+		// 	}
+		// 	glEnd();
+		// }
 		
-
+		glDrawPixels(ScreenBuffer.Width, ScreenBuffer.Height,
+		             GL_RGBA, GL_UNSIGNED_BYTE, ScreenBuffer.ScreenBuffer);
 
 		glfwSwapBuffers(OpenGLWindow);
 

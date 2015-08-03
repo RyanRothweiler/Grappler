@@ -344,7 +344,19 @@ LoadAssets(game_state *GameState)
 	GameState->TestNoteSampleIndex = 0;
 	GameState->TestNote = LoadWave("../assets/testNote.wav");
 
-	GameState->BackgroundImage = LoadBMP("../assets/Background.bmp");
+	GameState->BackgroundImage = {};
+	GameState->BackgroundImage.GLIndex = 10;
+	glGenTextures(GameState->BackgroundImage.GLIndex, &GameState->BackgroundImage.GLTexture);
+	glBindTexture(GL_TEXTURE_2D, GameState->BackgroundImage.GLTexture);
+
+	// NOTE maybe chagne the return value of LoadBMP
+	loaded_image LoadedImage = LoadBMP("../assets/Background.bmp");
+	GameState->BackgroundImage.Width = LoadedImage.Width;
+	GameState->BackgroundImage.Height = LoadedImage.Height;
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+	             GameState->BackgroundImage.Width, GameState->BackgroundImage.Height,
+	             0, GL_RGBA, GL_UNSIGNED_BYTE, LoadedImage.Pixels);
 
 	// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
 	DebugLine("Loaded", GameState);
@@ -386,7 +398,7 @@ extern "C" GAME_LOOP(GameLoop)
 
 		// NOTE maybe this method overwrites memory??
 		uint16 PosCount = 0;
-		GameState->BackgroundPositionsCount = 50;
+		GameState->BackgroundPositionsCount = 20;
 		for (int32 BackgroundX = -1;
 		     BackgroundX < 10;
 		     BackgroundX++)
@@ -510,15 +522,15 @@ extern "C" GAME_LOOP(GameLoop)
 		DrawSquare(EntityAbout->Position, EntityAbout->Width, ScreenBuffer->BackgroundColor, ScreenBuffer);
 	}
 
-	DrawBMP(&GameState->BackgroundImage, vector2{100, 100}, ScreenBuffer);
+	// DrawBMP(&GameState->BackgroundImage, vector2{100, 100}, ScreenBuffer);
 
 	// NOTE need to switch this to open gl
-	// for (int BGPosCount = 0;
-	//      BGPosCount < GameState->BackgroundPositionsCount;
-	//      BGPosCount++)
-	// {
-	// 	DrawBMP(&GameState->BackgroundImage, GameState->BackgroundPositions[BGPosCount], ScreenBuffer);
-	// }
+	for (int BGPosCount = 0;
+	     BGPosCount < GameState->BackgroundPositionsCount;
+	     BGPosCount++)
+	{
+		DrawBMP(&GameState->BackgroundImage, GameState->BackgroundPositions[BGPosCount], ScreenBuffer);
+	}
 }
 
 extern "C" GAME_LOAD_ASSETS(GameLoadAssets)

@@ -139,6 +139,9 @@ struct loaded_image
 	uint32 Width;
 	uint32 Height;
 	uint32 *Pixels;
+
+	GLuint GLTexture;
+	uint32 GLIndex;
 };
 
 struct game_audio_output_buffer

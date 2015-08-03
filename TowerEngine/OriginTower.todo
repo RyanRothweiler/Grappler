@@ -15,6 +15,7 @@
    ☐ ui button with normal / selected / down states
    ☐ ui button concept
    ☐ visualize player health in ui
+   ☐ rendering text on screen from font file
 
 
  Physics:
@@ -27,7 +28,8 @@
    ☐ extend audio to support stereo
 
 Graphics:
-   ☐ Create a render order
+   ☐ create a render order
+   ☐ allow the winow to resize. The pixel buffer doesn't update its size when the window resizes.
 
 Color:
    ☐ Change color to use floats (0.0 - 1.0) instead of (0 - 255)
