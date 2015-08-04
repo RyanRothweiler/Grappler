@@ -3,129 +3,6 @@
 
 static platform_read_file *PlatformReadFile;
 
-void
-DrawSquare(vector2 Pos, uint32 squareSize, color Color, screen_buffer *ScreenBuffer)
-{
-	// TODO convert this to opengl rendering
-	// vector2 Min = vector2{Pos.X - (squareSize / 2), Pos.Y - (squareSize / 2)};
-	// vector2 Max = vector2{Pos.X + (squareSize / 2), Pos.Y + (squareSize / 2)};
-
-	// if (Min.X < 0)
-	// {
-	// 	Min.X = 0;
-	// }
-	// if (Min.Y < 0)
-	// {
-	// 	Min.Y = 0;
-	// }
-	// if (Max.X > (int32)ScreenBuffer->Width)
-	// {
-	// 	Max.X = (int32)ScreenBuffer->Width;
-	// }
-	// if (Max.Y > (int32)ScreenBuffer->Height)
-	// {
-	// 	Max.Y = (int32)ScreenBuffer->Height;
-	// }
-
-	// uint32 Pitch = ScreenBuffer->Width * ScreenBuffer->BytesPerPixel;
-	// uint8 *Row = (uint8 *)ScreenBuffer->ScreenBuffer + (((int32)Min.X * ScreenBuffer->BytesPerPixel) + ((int32)Min.Y * Pitch));
-	// for (int32 Y = (int32)Min.Y;
-	//      Y < Max.Y;
-	//      ++Y)
-	// {
-	// 	uint8 *Pixel = (uint8 *)Row;
-	// 	for (int32 X = (int32)Min.X;
-	// 	     X < Max.X;
-	// 	     ++X)
-	// 	{
-	// 		// B
-	// 		*Pixel = Color.B;
-	// 		++Pixel;
-
-	// 		// G
-	// 		*Pixel = Color.G;
-	// 		++Pixel;
-
-	// 		// R
-	// 		*Pixel = Color.R;
-	// 		++Pixel;
-
-	// 		// A?
-	// 		*Pixel = Color.A;
-	// 		++Pixel;
-	// 	}
-	// 	Row += Pitch;
-	// }
-}
-
-void
-DrawBMP(loaded_image *Image, vector2 Pos, screen_buffer *ScreenBuffer)
-{
-	// // TODO convert this to opengl rendering
-	// vector2 Min = vector2{Pos.X - (Image->Width / 2), Pos.Y - (Image->Height / 2)};
-	// vector2 Max = vector2{Pos.X + (Image->Width / 2), Pos.Y + (Image->Height / 2)};
-
-	// if (Min.X < 0)
-	// {
-	// 	Min.X = 0;
-	// }
-	// if (Min.Y < 0)
-	// {
-	// 	Min.Y = 0;
-	// }
-	// if (Max.X > (int32)ScreenBuffer->Width)
-	// {
-	// 	Max.X = (int32)ScreenBuffer->Width;
-	// }
-	// if (Max.Y > (int32)ScreenBuffer->Height)
-	// {
-	// 	Max.Y = (int32)ScreenBuffer->Height;
-	// }
-
-	// if (Max > 0)
-	// {
-	// 	// Move to the correct column
-	// 	uint32 *SourceRow = {};
-	// 	if (Image->Height > (uint32)Max.Y)
-	// 	{
-	// 		SourceRow = Image->Pixels + (Image->Width * ((int32)Max.Y - 1));
-	// 	}
-	// 	else
-	// 	{
-	// 		SourceRow = Image->Pixels + (Image->Width * (Image->Height - 1));
-	// 	}
-
-	// 	// Move to the correct row in that column
-	// 	if (Pos.X - (Image->Width / 2) < 0)
-	// 	{
-	// 		SourceRow -= (int32)(Pos.X - (Image->Width / 2));
-	// 	}
-
-	// 	uint32 Pitch = ScreenBuffer->Width * ScreenBuffer->BytesPerPixel;
-	// 	uint8 *DestRow = (uint8 *)ScreenBuffer->ScreenBuffer + (((int32)Min.X * ScreenBuffer->BytesPerPixel) + ((int32)Min.Y * Pitch));
-	// 	for (uint32 Y = (int32)Min.Y;
-	// 	     Y < (uint32)Max.Y;
-	// 	     ++Y)
-	// 	{
-	// 		uint32 *Dest = (uint32 *)DestRow;
-	// 		uint8 *Source = (uint8 *)SourceRow;
-	// 		for (uint32 X = (int32)Min.X;
-	// 		     X < (uint32)Max.X;
-	// 		     ++X)
-	// 		{
-	// 			uint8 Bit2 = *Source++; // A
-	// 			uint8 Bit1 = *Source++; // R
-	// 			uint8 Bit0 = *Source++; // G
-	// 			uint8 Bit3 = *Source++; // B
-
-	// 			*Dest++ = (Bit0 << 24) | (Bit1 << 16) | (Bit2 << 8) | (Bit3 << 0);
-	// 		}
-	// 		DestRow += Pitch;
-	// 		SourceRow -= Image->Width;
-	// 	}
-	// }
-}
-
 int64
 Lerp(int64 a, int64 b, real32 t)
 {
@@ -332,6 +209,20 @@ GLLoadBMP(char *FilePath)
 		BitmapPixels = ((uint32 *)FileResult.Contents + 35);
 	}
 
+	uint32 *Source = (uint32 *)BitmapPixels;
+	for (uint32 PixelIndex = 0;
+	     PixelIndex < (Result.Width * Result.Height);
+	     ++PixelIndex)
+	{
+		uint8 *Pixel = (uint8 *)Source;
+		uint8 Bit2 = *Pixel++; // A
+		uint8 Bit3 = *Pixel++; // R
+		uint8 Bit0 = *Pixel++; // G
+		uint8 Bit1 = *Pixel++; // B
+
+		*Source++ = (Bit0 << 24) | (Bit1 << 16) | (Bit2 << 8) | (Bit3 << 0);
+	}
+
 	glGenTextures(1, &Result.GLTexture);
 	glBindTexture(GL_TEXTURE_2D, Result.GLTexture);
 
@@ -354,7 +245,7 @@ LoadAssets(game_state *GameState)
 	GameState->TestNoteSampleIndex = 0;
 	GameState->TestNote = LoadWave("../assets/testNote.wav");
 
-	GameState->BackgroundImage = GLLoadBMP("../assets/TestImage.bmp");
+	GameState->BackgroundImage = GLLoadBMP("../assets/Background.bmp");
 
 	// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
 	DebugLine("Loaded", GameState);
@@ -377,9 +268,13 @@ MakeSquare(vector2 Pos, int32 SideLength, color Color)
 }
 
 void
-RecreateSquare()
+UpdateSquare(active_entity *Entity)
 {
-
+	int32 HalfSide = Entity->Width / 2;
+	Entity->GraphicSquare.TopLeft = vector2{Entity->Position.X - HalfSide, Entity->Position.Y - HalfSide};
+	Entity->GraphicSquare.TopRight = vector2{Entity->Position.X + HalfSide, Entity->Position.Y - HalfSide};
+	Entity->GraphicSquare.BottomLeft = vector2{Entity->Position.X - HalfSide, Entity->Position.Y + HalfSide};
+	Entity->GraphicSquare.BottomRight = vector2{Entity->Position.X + HalfSide, Entity->Position.Y + HalfSide};
 }
 
 extern "C" GAME_LOOP(GameLoop)
@@ -396,7 +291,7 @@ extern "C" GAME_LOOP(GameLoop)
 
 		// NOTE maybe this method overwrites memory??
 		uint16 PosCount = 0;
-		GameState->BackgroundPositionsCount = 20;
+		GameState->BackgroundPositionsCount = 50;
 		for (int32 BackgroundX = -1;
 		     BackgroundX < 10;
 		     BackgroundX++)
@@ -411,15 +306,15 @@ extern "C" GAME_LOOP(GameLoop)
 			}
 		}
 
-		GameState->Player.Entity.Position.X = (real64)(ScreenBuffer->Width / 2);
-		GameState->Player.Entity.Position.Y = (real64)(ScreenBuffer->Height / 2);
+		GameState->Player.Entity.Position.X = 500.0f;
+		GameState->Player.Entity.Position.Y = 500.0f;
 		GameState->Player.Entity.Width = 50;
 		GameState->Player.Entity.MovementSpeed = 3;
-		GameState->Player.Entity.GraphicSquare = MakeSquare(GameState->Player.Entity.Position, GameState->Player.Entity.Width, COLOR_RED);
+		GameState->Player.Entity.GraphicSquare = MakeSquare(GameState->Player.Entity.Position, GameState->Player.Entity.Width, COLOR_BLUE);
 		GameState->GLSquares[0] = &GameState->Player.Entity.GraphicSquare;
 
-		GameState->Enemy.Position.X = (real64)(ScreenBuffer->Width / 3);
-		GameState->Enemy.Position.Y = (real64)(ScreenBuffer->Height / 3);
+		GameState->Enemy.Position.X = 700.0f;
+		GameState->Enemy.Position.Y = 700.0f;
 		GameState->Enemy.Width = 50;
 		GameState->Enemy.MovementSpeed = 1;
 		GameState->Enemy.GraphicSquare = MakeSquare(GameState->Enemy.Position, GameState->Enemy.Width, COLOR_GREEN);
@@ -448,7 +343,6 @@ extern "C" GAME_LOOP(GameLoop)
 	player *Player = &GameState->Player;
 	active_entity *Enemy = &GameState->Enemy;
 	active_entity *Camera = &GameState->Camera;
-
 
 	if (GameInput->BButton.OnDown)
 	{
@@ -516,18 +410,7 @@ extern "C" GAME_LOOP(GameLoop)
 	     EntityIndex < GameState->WorldEntityCount;
 	     EntityIndex++)
 	{
-		active_entity *EntityAbout = GameState->WorldEntities[EntityIndex];
-		DrawSquare(EntityAbout->Position, EntityAbout->Width, ScreenBuffer->BackgroundColor, ScreenBuffer);
-	}
-
-	// DrawBMP(&GameState->BackgroundImage, vector2{100, 100}, ScreenBuffer);
-
-	// NOTE need to switch this to open gl
-	for (int BGPosCount = 0;
-	     BGPosCount < GameState->BackgroundPositionsCount;
-	     BGPosCount++)
-	{
-		DrawBMP(&GameState->BackgroundImage, GameState->BackgroundPositions[BGPosCount], ScreenBuffer);
+		UpdateSquare(GameState->WorldEntities[EntityIndex]);
 	}
 }
 

@@ -1,35 +1,32 @@
- General:
-   ☐ strip out all old windows software rendering code
-   ☐ try to pull save state code out into methods
-   ☐ switch color constants to #defines? Is this a good idea?
+General:
+   ✔ try to pull save state code out into methods @done (15-08-04 04:05)
+   ☐ use git command line to commit the project
    ☐ smooth camera follower
    ☐ player takes damage
-   ☐ use git command line to commit the project
    ☐ put in safeguards so when loading a savestate from a previous version it doesn't crash
-   ☐ why is player black?
 
- UI:
+UI:
    ☐ ui button with normal / selected / down states
    ☐ ui button concept
    ☐ visualize player health in ui
    ☐ rendering text on screen from font file
 
-
- Physics:
+Physics:
    ☐ when objects collide move the collider the difference so no gaps
    ☐ allow colliding objects to slide on eachother
    ☐ collision checking allowing IsColliding
    ☐ collision checking allowing OnCollision
 
- Audio:
+Audio:
    ☐ extend audio to support stereo
+
+File:
+   ☐ Show warning when a file cannot be found.
 
 Graphics:
    ☐ create a render order
-   ☐ allow the winow to resize. The pixel buffer doesn't update its size when the window resizes.
    ☐ transparent bitmaps
-   ☐ opengl drawing bitmap
-   ☐ render bitmap background with opengl
+   ☐ infinitely tileable background
    ☐ test background moving with camera
 
 Color:
@@ -40,6 +37,11 @@ Color:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+ ✔ switch color constants to #defines? Is this a good idea? @done (15-08-04 01:35) @project(Color)
+ ✔ render bitmap background with opengl @done (15-08-03 08:29) @project(Graphics)
+ ✔ opengl drawing bitmap @done (15-08-03 08:29) @project(Graphics)
+ ✔ fix GLLoadBMP to re order pixels to display the image correctly @done (15-08-03 08:29) @project(General)
+ ✔ strip out all old windows software rendering code @done (15-08-03 06:52) @project(General)
  ✔ opengl drawing square @done (15-08-02 03:19) @project(General)
  ✔ make sure state loading still works in opengl @done (15-08-02 03:03) @project(General)
  ✔ make sure sound still works in opengl @done (15-08-01 12:16) @project(General)

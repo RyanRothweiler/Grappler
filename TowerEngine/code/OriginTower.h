@@ -152,15 +152,10 @@ struct game_audio_output_buffer
 	int16 *Samples;
 };
 
-struct screen_buffer
+struct window_info
 {
-	uint32 BytesPerPixel = 4;
-	void *ScreenBuffer;
-
-	DWORD Width;
-	DWORD Height;
-
-	color BackgroundColor;
+	uint32 Width;
+	uint32 Height;
 };
 
 struct input_button
@@ -273,7 +268,7 @@ struct game_memory
 	platform_read_file *PlatformReadFile;
 };
 
-#define GAME_LOOP(name) void name(game_memory *Memory, game_input *GameInput, screen_buffer *ScreenBuffer, game_audio_output_buffer *AudioBuffer)
+#define GAME_LOOP(name) void name(game_memory *Memory, game_input *GameInput, window_info *WindowInfo, game_audio_output_buffer *AudioBuffer)
 typedef GAME_LOOP(game_update_and_render);
 GAME_LOOP(GameLoopStub)
 { }

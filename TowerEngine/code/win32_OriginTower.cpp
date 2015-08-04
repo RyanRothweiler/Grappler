@@ -6,7 +6,7 @@ static bool PRINTFPS = false;
 
 
 bool GlobalRunning = true;
-screen_buffer ScreenBuffer;
+window_info ScreenBuffer;
 int64 ElapsedFrameCount;
 int64 PerfCountFrequency;
 LPDIRECTSOUNDBUFFER SoundSecondaryBuffer;
@@ -457,37 +457,16 @@ GetGameCodeLastWriteTime()
 }
 
 void
-FillPixels(screen_buffer *ScreenBuffer)
+CheckSaveState(char *FilePath, input_button *ButtonChecking, bool32 SelectIsDown, 
+               game_memory *GameMemory, win32_game_code *GameCode)
 {
-	uint8 *Row = (uint8 *)ScreenBuffer->ScreenBuffer;
-	for (uint32 Y = 0;
-	     Y < ScreenBuffer->Height;
-	     ++Y)
+	if (ButtonChecking->OnDown && SelectIsDown)
 	{
-		uint8 *Pixel = (uint8 *)Row;
-		for (uint32 X = 0;
-		     X < ScreenBuffer->Width;
-		     ++X)
-		{
-			// B
-			*Pixel = ScreenBuffer->BackgroundColor.B;
-			++Pixel;
-
-			// G
-			*Pixel = ScreenBuffer->BackgroundColor.G;
-			++Pixel;
-
-			// R
-			*Pixel = ScreenBuffer->BackgroundColor.R;
-			++Pixel;
-
-			// A?
-			*Pixel = ScreenBuffer->BackgroundColor.A;
-			++Pixel;
-
-		}
-		uint32 Pitch = ScreenBuffer->Width * ScreenBuffer->BytesPerPixel;
-		Row += Pitch;
+		SaveSate(FilePath, GameMemory);
+	}
+	if (ButtonChecking->OnDown && !SelectIsDown)
+	{
+		LoadState(FilePath, GameMemory, GameCode);
 	}
 }
 
@@ -500,15 +479,8 @@ int32 main (int32 argc, char **argv)
 	}
 
 	ScreenBuffer = {};
-	ScreenBuffer.BackgroundColor.R = 0;
-	ScreenBuffer.BackgroundColor.G = 0;
-	ScreenBuffer.BackgroundColor.B = 0;
 	ScreenBuffer.Width = 1920;
 	ScreenBuffer.Height = 1080;
-
-	uint32 MemSize = ScreenBuffer.Width * ScreenBuffer.Height * ScreenBuffer.BytesPerPixel;
-	ScreenBuffer.ScreenBuffer =  VirtualAlloc(0, MemSize, MEM_COMMIT, PAGE_READWRITE);
-	FillPixels(&ScreenBuffer);
 
 	GLFWwindow* OpenGLWindow = glfwCreateWindow(ScreenBuffer.Width, ScreenBuffer.Height, "Origin Tower", NULL, NULL);
 	if (!OpenGLWindow)
@@ -517,7 +489,7 @@ int32 main (int32 argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	glfwMakeContextCurrent(OpenGLWindow);
-	glClearColor(0.2f, 0.5f, 0.2f, 1.0f);
+	glClearColor(1.0f, 0.2f, 1.0f, 1.0f);
 
 	glMatrixMode(GL_PROJECTION);
 	glOrtho(0, ScreenBuffer.Width, ScreenBuffer.Height, 0, -10, 10);
@@ -630,47 +602,10 @@ int32 main (int32 argc, char **argv)
 			}
 		}
 
-
-		char *Slot1Name = "StateSlot1.ss";
-		char *Slot2Name = "StateSlot2.ss";
-		char *Slot3Name = "StateSlot3.ss";
-		char *Slot4Name = "StateSlot4.ss";
-		// NOTE might need to redraw or clear the buffer in opengl here
-		if (GameInput.R1.OnDown && GameInput.Select.IsDown)
-		{
-			SaveSate(Slot1Name, &GameMemory);
-		}
-		if (GameInput.R1.OnDown && !GameInput.Select.IsDown)
-		{
-			LoadState(Slot1Name, &GameMemory, &GameCode);
-		}
-
-		if (GameInput.L1.OnDown && GameInput.Select.IsDown)
-		{
-			SaveSate(Slot2Name, &GameMemory);
-		}
-		if (GameInput.L1.OnDown && !GameInput.Select.IsDown)
-		{
-			LoadState(Slot2Name, &GameMemory, &GameCode);
-		}
-
-		if (GameInput.R2.OnDown && GameInput.Select.IsDown)
-		{
-			SaveSate(Slot3Name, &GameMemory);
-		}
-		if (GameInput.R2.OnDown && !GameInput.Select.IsDown)
-		{
-			LoadState(Slot3Name, &GameMemory, &GameCode);
-		}
-
-		if (GameInput.L2.OnDown && GameInput.Select.IsDown)
-		{
-			SaveSate(Slot4Name, &GameMemory);
-		}
-		if (GameInput.L2.OnDown && !GameInput.Select.IsDown)
-		{
-			LoadState(Slot4Name, &GameMemory, &GameCode);
-		}
+		CheckSaveState("SateSlot1.ts", &GameInput.R1, GameInput.Select.IsDown, &GameMemory, &GameCode);
+		CheckSaveState("SateSlot2.ts", &GameInput.L1, GameInput.Select.IsDown, &GameMemory, &GameCode);
+		CheckSaveState("SateSlot3.ts", &GameInput.R2, GameInput.Select.IsDown, &GameMemory, &GameCode);
+		CheckSaveState("SateSlot4.ts", &GameInput.L2, GameInput.Select.IsDown, &GameMemory, &GameCode);
 
 		LARGE_INTEGER AudioWallClock = GetWallClock();
 		real32 FromBeginToAudioSeconds = GetSecondsElapsed(FlipWallClock, AudioWallClock);
@@ -749,6 +684,27 @@ int32 main (int32 argc, char **argv)
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
+
+		for (uint32 PosCount = 0;
+		     PosCount < (uint32)GameStateFromMemory->BackgroundPositionsCount;
+		     PosCount++)
+		{
+			vector2 Center = GameStateFromMemory->BackgroundPositions[PosCount];
+			loaded_image Image = GameStateFromMemory->BackgroundImage;
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, Image.GLTexture);
+			glBegin(GL_QUADS);
+			{
+				glColor3f(1.0f, 1.0f, 1.0f);
+				glTexCoord2f(0, 1); glVertex2f((GLfloat)(Center.X - Image.Width), (GLfloat)(Center.Y - Image.Height));
+				glTexCoord2f(1, 1); glVertex2f((GLfloat)(Center.X + Image.Width), (GLfloat)(Center.Y - Image.Height));
+				glTexCoord2f(1, 0); glVertex2f((GLfloat)(Center.X + Image.Width), (GLfloat)(Center.Y + Image.Height));
+				glTexCoord2f(0, 0); glVertex2f((GLfloat)(Center.X - Image.Width), (GLfloat)(Center.Y + Image.Height));
+			}
+			glEnd();
+		}
+
+		glBindTexture(GL_TEXTURE_2D, 0);
 		for (uint32 SquareIndex = 0;
 		     SquareIndex < GameStateFromMemory->SquareCount;
 		     SquareIndex++)
@@ -765,23 +721,6 @@ int32 main (int32 argc, char **argv)
 			}
 			glEnd();
 		}
-
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, GameStateFromMemory->BackgroundImage.GLTexture);
-
-		glBegin(GL_QUADS);
-		{
-			glColor3f(1.0f, 1.0f, 1.0f);
-			glTexCoord2f(0, 0); glVertex2f(100, 100);
-			glTexCoord2f(1, 0); glVertex2f(100, 200);
-			glTexCoord2f(1, 1); glVertex2f(200, 200);
-			glTexCoord2f(0, 1); glVertex2f(200, 100);
-		}
-		glEnd();
-
-
-		// glDrawPixels(ScreenBuffer.Width, ScreenBuffer.Height,
-		//              GL_RGBA, GL_UNSIGNED_BYTE, ScreenBuffer.ScreenBuffer);
 
 		glfwSwapBuffers(OpenGLWindow);
 
