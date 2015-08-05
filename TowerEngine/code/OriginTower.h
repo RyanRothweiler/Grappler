@@ -210,6 +210,8 @@ struct active_entity
 	real32 MovementSpeed;
 
 	gl_square GraphicSquare;
+
+	bool32 CanCollide;
 };
 
 struct player
@@ -233,7 +235,7 @@ struct game_state
 
 	loaded_image BackgroundImage;
 	int16 BackgroundPositionsCount;
-	vector2 BackgroundPositions[50];
+	vector2 BackgroundPositions[200];
 
 	uint32 SquareCount;
 	gl_square *GLSquares[50];
