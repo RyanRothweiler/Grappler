@@ -332,11 +332,8 @@ extern "C" GAME_LOOP(GameLoop)
 		GameState->WorldEntities[0] = &GameState->Enemy;
 		GameState->WorldEntities[1] = &GameState->Player.Entity;
 
-		GameState->CameraFollowCoefficient = 0.0f;
-		GameState->Camera.Position = GameState->Player.Entity.Position;
-		GameState->Camera.MovementSpeed = 3;
-		GameState->Camera.CanCollide = false;
-		GameState->Camera.Width = 0;
+		GameState->WorldCenter = vector2{0, 0};
+		GameState->CamCenter = vector2{WindowInfo->Width / 2, WindowInfo->Height / 2};
 
 		AudioBuffer->RunningSampleIndex = 0;
 
@@ -349,7 +346,6 @@ extern "C" GAME_LOOP(GameLoop)
 
 	player *Player = &GameState->Player;
 	active_entity *Enemy = &GameState->Enemy;
-	active_entity *Camera = &GameState->Camera;
 
 	if (GameInput->BButton.OnDown)
 	{
@@ -385,35 +381,10 @@ extern "C" GAME_LOOP(GameLoop)
 
 	vector2 PrevPlayerPos = Player->Entity.Position;
 	VectorForceEntity(&Player->Entity, NormalizeVector2(GameInput->LeftStick), GameState);
-	vector2 DeltaPlayerPos = Player->Entity.Position - PrevPlayerPos;
 
-	vector2 PrevCamPos = Camera->Position;
-	real64 PlayerCameraDist = Vector2Distance(Player->Entity.Position, Camera->Position);
-	// GameState->CameraFollowCoefficient = 1.0f;
-	if (PlayerCameraDist > 200)
-	{
-		Camera->Position = Camera->Position + DeltaPlayerPos;
-		// 	GameState->CameraFollowCoefficient = 1.0f;
-	}
-	// GameState->CameraFollowCoefficient = ClampValue(0.0f, 1.0f, GameState->CameraFollowCoefficient);
-	// VectorForceEntity(Camera, NormalizeVector2(GameInput->LeftStick) * GameState->CameraFollowCoefficient, GameState);
-	// VectorForceEntity(Camera, NormalizeVector2(GameInput->LeftStick), GameState);
-	vector2 DeltaCamPos = Camera->Position - PrevCamPos;
+	vector2 PlayerCamDifference = Player->Entity.Position - GameState->WorldCenter;
+	GameState->WorldCenter = GameState->WorldCenter + (PlayerCamDifference * 0.08f);
 
-
-	for (int EntityIndex = 0;
-	     EntityIndex < GameState->WorldEntityCount;
-	     EntityIndex++)
-	{
-		active_entity *EntityAbout = GameState->WorldEntities[EntityIndex];
-		EntityAbout->Position = EntityAbout->Position - DeltaCamPos;
-	}
-	for (int BGPosCount = 0;
-	     BGPosCount < GameState->BackgroundPositionsCount;
-	     BGPosCount++)
-	{
-		GameState->BackgroundPositions[BGPosCount] = GameState->BackgroundPositions[BGPosCount] - DeltaCamPos;
-	}
 
 	for (int EntityIndex = 0;
 	     EntityIndex < GameState->WorldEntityCount;

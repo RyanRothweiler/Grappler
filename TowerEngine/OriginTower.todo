@@ -1,6 +1,4 @@
 General:
-   ☐ smooth camera follower
-   ☐ player takes damage
    ☐ put in safeguards so when loading a savestate from a previous version it doesn't crash
    ☐ create some movement based on time, to smooth things out
 
@@ -19,6 +17,7 @@ Physics:
    ☐ allow colliding objects to slide on eachother
    ☐ collision checking allowing IsColliding
    ☐ collision checking allowing OnCollision
+   ☐ player takes damage using the above collision features
 
 Audio:
    ☐ extend audio to support stereo
@@ -40,6 +39,7 @@ Color:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+ ✔ smooth camera follower @done (15-08-06 02:37) @project(General)
  ✔ use git command line to commit the project (going to try the github desktop app for a while. Maybe it's better than sourcetree) @done (15-08-04 04:23) @project(General)
  ✔ try to pull save state code out into methods @done (15-08-04 04:05) @project(General)
  ✔ switch color constants to #defines? Is this a good idea? @done (15-08-04 01:35) @project(Color)

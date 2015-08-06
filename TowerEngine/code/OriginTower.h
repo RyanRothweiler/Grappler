@@ -227,9 +227,6 @@ struct game_state
 	player Player;
 	active_entity Enemy;
 
-	real64 CameraFollowCoefficient;
-	active_entity Camera;
-
 	loaded_sound TestNote;
 	uint32 TestNoteSampleIndex;
 
@@ -239,6 +236,9 @@ struct game_state
 
 	uint32 SquareCount;
 	gl_square *GLSquares[50];
+
+	vector2 WorldCenter;
+	vector2 CamCenter;
 
 	bool PrintFPS;
 	char *DebugOutput = "";

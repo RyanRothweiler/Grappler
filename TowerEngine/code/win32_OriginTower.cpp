@@ -684,7 +684,7 @@ int32 main (int32 argc, char **argv)
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
-
+		vector2 WorldCenter = GameStateFromMemory->WorldCenter - GameStateFromMemory->CamCenter;
 		for (uint32 PosCount = 0;
 		     PosCount < (uint32)GameStateFromMemory->BackgroundPositionsCount;
 		     PosCount++)
@@ -696,10 +696,10 @@ int32 main (int32 argc, char **argv)
 			glBegin(GL_QUADS);
 			{
 				glColor3f(1.0f, 1.0f, 1.0f);
-				glTexCoord2f(0, 1); glVertex2f((GLfloat)(Center.X - Image.Width), (GLfloat)(Center.Y - Image.Height));
-				glTexCoord2f(1, 1); glVertex2f((GLfloat)(Center.X + Image.Width), (GLfloat)(Center.Y - Image.Height));
-				glTexCoord2f(1, 0); glVertex2f((GLfloat)(Center.X + Image.Width), (GLfloat)(Center.Y + Image.Height));
-				glTexCoord2f(0, 0); glVertex2f((GLfloat)(Center.X - Image.Width), (GLfloat)(Center.Y + Image.Height));
+				glTexCoord2f(0, 1); glVertex2f((GLfloat)((Center.X - WorldCenter.X) - Image.Width), (GLfloat)((Center.Y - WorldCenter.Y) - Image.Height));
+				glTexCoord2f(1, 1); glVertex2f((GLfloat)((Center.X - WorldCenter.X) + Image.Width), (GLfloat)((Center.Y - WorldCenter.Y) - Image.Height));
+				glTexCoord2f(1, 0); glVertex2f((GLfloat)((Center.X - WorldCenter.X) + Image.Width), (GLfloat)((Center.Y - WorldCenter.Y) + Image.Height));
+				glTexCoord2f(0, 0); glVertex2f((GLfloat)((Center.X - WorldCenter.X) - Image.Width), (GLfloat)((Center.Y - WorldCenter.Y) + Image.Height));
 			}
 			glEnd();
 		}
@@ -714,10 +714,10 @@ int32 main (int32 argc, char **argv)
 				gl_square *Square = GameStateFromMemory->GLSquares[SquareIndex];
 				glColor3f((GLfloat)(Square->Color.R / 255), (GLfloat)(Square->Color.G / 255), (GLfloat)(Square->Color.B / 255));
 				// NOTE the order of this can't be changed. Though I can't find any documentation on why or what the correct order is, but this works.
-				glVertex2d(Square->TopRight.X, Square->TopRight.Y);
-				glVertex2d(Square->TopLeft.X, Square->TopLeft.Y);
-				glVertex2d(Square->BottomLeft.X, Square->BottomLeft.Y);
-				glVertex2d(Square->BottomRight.X, Square->BottomRight.Y);
+				glVertex2d((Square->TopRight.X - WorldCenter.X), (Square->TopRight.Y - WorldCenter.Y));
+				glVertex2d((Square->TopLeft.X - WorldCenter.X), (Square->TopLeft.Y - WorldCenter.Y));
+				glVertex2d((Square->BottomLeft.X - WorldCenter.X), (Square->BottomLeft.Y - WorldCenter.Y));
+				glVertex2d((Square->BottomRight.X - WorldCenter.X), (Square->BottomRight.Y - WorldCenter.Y));
 			}
 			glEnd();
 		}

@@ -101,7 +101,7 @@ Vector2Distance(vector2 A, vector2 B)
 	real64 ASideLength = Abs(A.X - B.X);
 	real64 BSideLength = Abs(A.Y - B.Y);
 	Output = SquareRoot((ASideLength * ASideLength) + (BSideLength * BSideLength));
-	return (Output);
+	return (Abs(Output));
 }
 
 const vector2 VECTOR2ZERO = vector2{0, 0};
