@@ -18,6 +18,8 @@ VectorForceEntity(active_entity *Entity, vector2 InputForce, game_state *GameSta
 	vector2 NewTestPos = (0.5f * InputForce * SquareInt((int64)(0.9f))) + (Entity->Velocity * 0.9f) + Entity->Position;
 
 	bool32 CollisionDetected = false;
+	active_entity *EntityHit = {};
+
 	if (Entity->CanCollide)
 	{
 		for (int EntityIndex = 0;
@@ -26,7 +28,6 @@ VectorForceEntity(active_entity *Entity, vector2 InputForce, game_state *GameSta
 		{
 			if (GameState->WorldEntities[EntityIndex] != Entity)
 			{
-				// real64 WidthAdding = Entity->Width;
 				real64 WidthAdding = Entity->Width;
 				vector2 EntityTopLeft =
 				{
@@ -45,6 +46,7 @@ VectorForceEntity(active_entity *Entity, vector2 InputForce, game_state *GameSta
 				    NewTestPos.Y < EntityBottomRight.Y)
 				{
 					CollisionDetected = true;
+					EntityHit = GameState->WorldEntities[EntityIndex];
 				}
 			}
 		}
@@ -57,7 +59,34 @@ VectorForceEntity(active_entity *Entity, vector2 InputForce, game_state *GameSta
 	}
 	else
 	{
-		Entity->Velocity = vector2{0, 0};
+		real64 WidthSum = (EntityHit->Width / 2) + (Entity->Width / 2);
+
+		vector2 NewPos = NewTestPos;
+		vector2 NewVelocity = (InputForce * 0.9f) + Entity->Velocity;
+		
+		if (Entity->Position.X > (EntityHit->Position.X + WidthSum))
+		{
+			NewVelocity.X = 0;
+			NewPos.X = EntityHit->Position.X + WidthSum + 0.1f;
+		}
+		if (Entity->Position.X < (EntityHit->Position.X - WidthSum))
+		{
+			NewVelocity.X = 0;
+			NewPos.X = EntityHit->Position.X - WidthSum - 0.1f;
+		}
+		if (Entity->Position.Y > (EntityHit->Position.Y + WidthSum))
+		{
+			NewVelocity.Y = 0;
+			NewPos.Y = EntityHit->Position.Y + WidthSum + 0.1f;
+		}
+		if (Entity->Position.Y < (EntityHit->Position.Y - WidthSum))
+		{
+			NewVelocity.Y = 0;
+			NewPos.Y = EntityHit->Position.Y - WidthSum - 0.1f;
+		}
+
+		Entity->Position = NewPos;
+		Entity->Velocity = NewVelocity;
 	}
 }
 
@@ -321,7 +350,7 @@ extern "C" GAME_LOOP(GameLoop)
 
 		GameState->Enemy.Position.X = 700.0f;
 		GameState->Enemy.Position.Y = 700.0f;
-		GameState->Enemy.Width = 50;
+		GameState->Enemy.Width = 100;
 		GameState->Enemy.CanCollide = true;
 		GameState->Enemy.MovementSpeed = 1;
 		GameState->Enemy.GraphicSquare = MakeSquare(GameState->Enemy.Position, GameState->Enemy.Width, COLOR_GREEN);
@@ -342,7 +371,6 @@ extern "C" GAME_LOOP(GameLoop)
 		// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
 		DebugLine("Initialized", GameState);
 	}
-
 
 	player *Player = &GameState->Player;
 	active_entity *Enemy = &GameState->Enemy;

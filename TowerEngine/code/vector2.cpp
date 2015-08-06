@@ -104,4 +104,4 @@ Vector2Distance(vector2 A, vector2 B)
 	return (Abs(Output));
 }
 
-const vector2 VECTOR2ZERO = vector2{0, 0};
+const vector2 VECTOR2_ZERO = vector2{0, 0};

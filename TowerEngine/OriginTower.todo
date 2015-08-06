@@ -11,10 +11,9 @@ UI:
    ☐ ui button concept
    ☐ visualize player health in ui
    ☐ rendering text on screen from font file
+   ☐ show fps in game
 
 Physics:
-   ☐ when objects collide move the collider the difference so no gaps
-   ☐ allow colliding objects to slide on eachother
    ☐ collision checking allowing IsColliding
    ☐ collision checking allowing OnCollision
    ☐ player takes damage using the above collision features
@@ -39,6 +38,9 @@ Color:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+ ✔ test all these collision features with different sized squares @done (15-08-06 10:41) @project(Physics)
+ ✔ allow colliding objects to slide on eachother @done (15-08-06 10:40) @project(Physics)
+ ✔ when objects collide move the collider the difference so no gaps @done (15-08-06 09:12) @project(Physics)
  ✔ smooth camera follower @done (15-08-06 02:37) @project(General)
  ✔ use git command line to commit the project (going to try the github desktop app for a while. Maybe it's better than sourcetree) @done (15-08-04 04:23) @project(General)
  ✔ try to pull save state code out into methods @done (15-08-04 04:05) @project(General)
