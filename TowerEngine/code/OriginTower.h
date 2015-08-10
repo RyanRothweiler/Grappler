@@ -10,7 +10,6 @@
 #include <xinput.h>
 #include <dsound.h>
 
-
 #define internal static
 
 #define Kilobytes(value) ((value) * 1024)
@@ -201,6 +200,12 @@ struct gl_square
 	vector2 BottomRight;
 };
 
+struct gl_texture
+{
+	loaded_image *Image;
+	vector2 Center;
+};
+
 struct active_entity
 {
 	vector2 Position;
@@ -209,7 +214,7 @@ struct active_entity
 	uint16 Width;
 	real32 MovementSpeed;
 
-	gl_square GraphicSquare;
+	color Color;
 
 	bool32 OnCollide;
 	bool32 IsColliding;
@@ -221,7 +226,6 @@ struct player
 {
 	active_entity Entity;
 
-	int8 MaxHealth;
 	int8 CurrHealth;
 };
 
@@ -233,6 +237,9 @@ struct game_state
 	player Player;
 	active_entity Enemy;
 
+	uint32 PlayerHealthCount;
+	gl_square *PlayerHealthSquares[50];
+
 	loaded_sound TestNote;
 	uint32 TestNoteSampleIndex;
 
@@ -240,8 +247,10 @@ struct game_state
 	int16 BackgroundPositionsCount;
 	vector2 BackgroundPositions[200];
 
-	uint32 SquareCount;
-	gl_square *GLSquares[50];
+	uint32 RenderTexturesCount;
+	gl_texture RenderTextures[300];
+	uint32 RenderSquaresCount;
+	gl_square RenderSquares[50];
 
 	vector2 WorldCenter;
 	vector2 CamCenter;

@@ -457,7 +457,7 @@ GetGameCodeLastWriteTime()
 }
 
 void
-CheckSaveState(char *FilePath, input_button *ButtonChecking, bool32 SelectIsDown, 
+CheckSaveState(char *FilePath, input_button *ButtonChecking, bool32 SelectIsDown,
                game_memory *GameMemory, win32_game_code *GameCode)
 {
 	if (ButtonChecking->OnDown && SelectIsDown)
@@ -684,40 +684,39 @@ int32 main (int32 argc, char **argv)
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		vector2 WorldCenter = GameStateFromMemory->WorldCenter - GameStateFromMemory->CamCenter;
 		for (uint32 PosCount = 0;
-		     PosCount < (uint32)GameStateFromMemory->BackgroundPositionsCount;
+		     PosCount < (uint32)GameStateFromMemory->RenderTexturesCount;
 		     PosCount++)
 		{
-			vector2 Center = GameStateFromMemory->BackgroundPositions[PosCount];
-			loaded_image Image = GameStateFromMemory->BackgroundImage;
+			vector2 Center = GameStateFromMemory->RenderTextures[PosCount].Center;
+			loaded_image Image = *GameStateFromMemory->RenderTextures->Image;
 			glEnable(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, Image.GLTexture);
 			glBegin(GL_QUADS);
 			{
 				glColor3f(1.0f, 1.0f, 1.0f);
-				glTexCoord2f(0, 1); glVertex2f((GLfloat)((Center.X - WorldCenter.X) - Image.Width), (GLfloat)((Center.Y - WorldCenter.Y) - Image.Height));
-				glTexCoord2f(1, 1); glVertex2f((GLfloat)((Center.X - WorldCenter.X) + Image.Width), (GLfloat)((Center.Y - WorldCenter.Y) - Image.Height));
-				glTexCoord2f(1, 0); glVertex2f((GLfloat)((Center.X - WorldCenter.X) + Image.Width), (GLfloat)((Center.Y - WorldCenter.Y) + Image.Height));
-				glTexCoord2f(0, 0); glVertex2f((GLfloat)((Center.X - WorldCenter.X) - Image.Width), (GLfloat)((Center.Y - WorldCenter.Y) + Image.Height));
+				glTexCoord2f(0, 1); glVertex2f((GLfloat)(Center.X - Image.Width), (GLfloat)(Center.Y - Image.Height));
+				glTexCoord2f(1, 1); glVertex2f((GLfloat)(Center.X + Image.Width), (GLfloat)(Center.Y - Image.Height));
+				glTexCoord2f(1, 0); glVertex2f((GLfloat)(Center.X + Image.Width), (GLfloat)(Center.Y + Image.Height));
+				glTexCoord2f(0, 0); glVertex2f((GLfloat)(Center.X - Image.Width), (GLfloat)(Center.Y + Image.Height));
 			}
 			glEnd();
 		}
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 		for (uint32 SquareIndex = 0;
-		     SquareIndex < GameStateFromMemory->SquareCount;
+		     SquareIndex < GameStateFromMemory->RenderSquaresCount;
 		     SquareIndex++)
 		{
 			glBegin(GL_QUADS);
 			{
-				gl_square *Square = GameStateFromMemory->GLSquares[SquareIndex];
-				glColor3f((GLfloat)(Square->Color.R / 255), (GLfloat)(Square->Color.G / 255), (GLfloat)(Square->Color.B / 255));
+				gl_square Square = GameStateFromMemory->RenderSquares[SquareIndex];
+				glColor3f((GLfloat)(Square.Color.R / 255), (GLfloat)(Square.Color.G / 255), (GLfloat)(Square.Color.B / 255));
 				// NOTE the order of this can't be changed. Though I can't find any documentation on why or what the correct order is, but this works.
-				glVertex2d((Square->TopRight.X - WorldCenter.X), (Square->TopRight.Y - WorldCenter.Y));
-				glVertex2d((Square->TopLeft.X - WorldCenter.X), (Square->TopLeft.Y - WorldCenter.Y));
-				glVertex2d((Square->BottomLeft.X - WorldCenter.X), (Square->BottomLeft.Y - WorldCenter.Y));
-				glVertex2d((Square->BottomRight.X - WorldCenter.X), (Square->BottomRight.Y - WorldCenter.Y));
+				glVertex2d(Square.TopRight.X, Square.TopRight.Y);
+				glVertex2d(Square.TopLeft.X, Square.TopLeft.Y);
+				glVertex2d(Square.BottomLeft.X, Square.BottomLeft.Y);
+				glVertex2d(Square.BottomRight.X, Square.BottomRight.Y);
 			}
 			glEnd();
 		}

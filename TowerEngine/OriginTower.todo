@@ -1,19 +1,30 @@
+Working on:
+   ☐ infinitely tileable background
+
 General:
    ☐ put in safeguards so when loading a savestate from a previous version it doesn't crash
    ☐ create some movement based on time, to smooth things out
 
 Gameplay:
    ☐ test enemy which moves to random locations
+   ☐ change player over to an image 
+   ☐ create a facing direction for the player
+   ☐ the player always faces in the directionm he is moving 
    ☐ latching onto an the test enemy
+   ☐ generate four walls
+   ☐ give enemies health
+   ☐ destory enemies when they die
+
+
+
+
 
 Code:
-   ☐ Find a way to assert the size of an array is not greater than we think it is
    ☐ Some controller button to stop the code where and when I want 
 
 UI:
    ☐ ui button with normal / selected / down states
    ☐ ui button concept
-   ☐ visualize player health in ui
    ☐ rendering text on screen from font file
    ☐ show fps in game
 
@@ -28,7 +39,6 @@ File:
 Graphics:
    ☐ create a render order
    ☐ transparent bitmaps
-   ☐ infinitely tileable background
    ☐ test background moving with camera
 
 Color:
@@ -39,9 +49,13 @@ Color:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
- ✔ collision checking allowing IsColliding @done (15-08-07 01:47) @project(Physics)
- ✔ collision checking allowing OnCollision @done (15-08-07 01:47) @project(Physics)
+ ✔ visualize player health in ui @done (15-08-10 11:45) @project(Working on)
+ ✔ create an interface with the platform layer to render loaded_images at locations. @done (15-08-10 11:45) @project(Working on)
+ ✔ move world zero offset into game layer. only talk to the platform layer through a list of gl squares @done (15-08-10 11:24) @project(Working on)
+ ✔ Find a way to assert the size of an array is not greater than we think it is @done (15-08-10 11:24) @project(Code)
  ✔ player takes damage using the above collision features @done (15-08-07 02:18) @project(Physics)
+ ✔ collision checking allowing OnCollision @done (15-08-07 01:47) @project(Physics)
+ ✔ collision checking allowing IsColliding @done (15-08-07 01:47) @project(Physics)
  ✔ test all these collision features with different sized squares @done (15-08-06 10:41) @project(Physics)
  ✔ allow colliding objects to slide on eachother @done (15-08-06 10:40) @project(Physics)
  ✔ when objects collide move the collider the difference so no gaps @done (15-08-06 09:12) @project(Physics)

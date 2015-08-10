@@ -316,13 +316,31 @@ MakeSquare(vector2 Pos, int32 SideLength, color Color)
 }
 
 void
-UpdateSquare(active_entity *Entity)
+PushRenderSquare(game_state *GameState, gl_square Square)
 {
-	int32 HalfSide = Entity->Width / 2;
-	Entity->GraphicSquare.TopLeft = vector2{Entity->Position.X - HalfSide, Entity->Position.Y - HalfSide};
-	Entity->GraphicSquare.TopRight = vector2{Entity->Position.X + HalfSide, Entity->Position.Y - HalfSide};
-	Entity->GraphicSquare.BottomLeft = vector2{Entity->Position.X - HalfSide, Entity->Position.Y + HalfSide};
-	Entity->GraphicSquare.BottomRight = vector2{Entity->Position.X + HalfSide, Entity->Position.Y + HalfSide};
+	Assert(_countof(GameState->RenderSquares) > GameState->RenderSquaresCount);
+	GameState->RenderSquares[GameState->RenderSquaresCount].TopLeft = Square.TopLeft;
+	GameState->RenderSquares[GameState->RenderSquaresCount].TopRight = Square.TopRight;
+	GameState->RenderSquares[GameState->RenderSquaresCount].BottomLeft = Square.BottomLeft;
+	GameState->RenderSquares[GameState->RenderSquaresCount].BottomRight = Square.BottomRight;
+	GameState->RenderSquares[GameState->RenderSquaresCount].Color = Square.Color;
+	GameState->RenderSquaresCount++;
+}
+
+void
+PushRenderTexture(game_state *GameState, gl_texture Texture)
+{
+	Assert(_countof(GameState->RenderTextures) > GameState->RenderTexturesCount);
+	GameState->RenderTextures[GameState->RenderTexturesCount].Image = Texture.Image;
+	GameState->RenderTextures[GameState->RenderTexturesCount].Center = Texture.Center;
+	GameState->RenderTexturesCount++;
+}
+
+void
+AddWorldEntity(game_state *GameState, active_entity *Entity)
+{
+	GameState->WorldEntities[GameState->WorldEntityCount] = Entity;
+	GameState->WorldEntityCount++;
 }
 
 extern "C" GAME_LOOP(GameLoop)
@@ -356,26 +374,23 @@ extern "C" GAME_LOOP(GameLoop)
 			}
 		}
 
+		GameState->WorldEntityCount = 0;
+		GameState->PlayerHealthCount = 0;
+
 		GameState->Player.Entity.Position.X = WindowInfo->Width / 2;
 		GameState->Player.Entity.Position.Y = WindowInfo->Height / 2;
 		GameState->Player.Entity.Width = 50;
 		GameState->Player.Entity.MovementSpeed = 3;
-		GameState->Player.Entity.GraphicSquare = MakeSquare(GameState->Player.Entity.Position, GameState->Player.Entity.Width, COLOR_BLUE);
-		GameState->GLSquares[0] = &GameState->Player.Entity.GraphicSquare;
-		GameState->Player.MaxHealth = 3;
-		GameState->Player.CurrHealth = GameState->Player.MaxHealth;
+		GameState->Player.Entity.Color = COLOR_BLUE;
+		GameState->Player.CurrHealth = 3;
+		AddWorldEntity(GameState, &GameState->Player.Entity);
 
 		GameState->Enemy.Position.X = 700.0f;
 		GameState->Enemy.Position.Y = 700.0f;
 		GameState->Enemy.Width = 100;
 		GameState->Enemy.MovementSpeed = 1;
-		GameState->Enemy.GraphicSquare = MakeSquare(GameState->Enemy.Position, GameState->Enemy.Width, COLOR_GREEN);
-		GameState->GLSquares[1] = &GameState->Enemy.GraphicSquare;
-
-		GameState->WorldEntityCount = 2;
-		GameState->SquareCount = GameState->WorldEntityCount;
-		GameState->WorldEntities[0] = &GameState->Enemy;
-		GameState->WorldEntities[1] = &GameState->Player.Entity;
+		GameState->Enemy.Color = COLOR_GREEN;
+		AddWorldEntity(GameState, &GameState->Enemy);
 
 		GameState->WorldCenter = vector2{0, 0};
 		GameState->CamCenter = vector2{WindowInfo->Width / 2, WindowInfo->Height / 2};
@@ -390,6 +405,9 @@ extern "C" GAME_LOOP(GameLoop)
 
 	player *Player = &GameState->Player;
 	active_entity *Enemy = &GameState->Enemy;
+
+	GameState->RenderSquaresCount = 0;
+	GameState->RenderTexturesCount = 0;
 
 	if (GameInput->BButton.OnDown)
 	{
@@ -439,6 +457,19 @@ extern "C" GAME_LOOP(GameLoop)
 		}
 	}
 
+	vector2 WorldCenter = GameState->WorldCenter - GameState->CamCenter;
+
+	for (uint32 PosCount = 0;
+	     PosCount < (uint32)GameState->BackgroundPositionsCount;
+	     PosCount++)
+	{
+		loaded_image Image = GameState->BackgroundImage;
+		gl_texture Texture = {};
+		Texture.Image = &GameState->BackgroundImage;
+		Texture.Center = GameState->BackgroundPositions[PosCount] - WorldCenter;
+		PushRenderTexture(GameState, Texture);
+	}
+
 	for (int EntityIndex = 0;
 	     EntityIndex < GameState->WorldEntityCount;
 	     EntityIndex++)
@@ -465,13 +496,25 @@ extern "C" GAME_LOOP(GameLoop)
 				EntityAbout->CollidingWith->IsColliding = false;
 				EntityAbout->IsColliding = false;
 			}
-
 			// NOTE I don't need to check the positive and negative y directions. I'm not quite sure why not.
+
 		}
 
 		EntityAbout->OnCollide = false;
 
-		UpdateSquare(EntityAbout);
+		vector2 EntityWorldCenter = EntityAbout->Position - WorldCenter;
+		gl_square NewSquare = MakeSquare(EntityWorldCenter, EntityAbout->Width, EntityAbout->Color);
+		PushRenderSquare(GameState, NewSquare);
+	}
+
+	for (int HealthIndex = 1;
+	     HealthIndex < GameState->Player.CurrHealth + 1;
+	     HealthIndex++)
+	{
+		uint8 Width = 30;
+		vector2 Center = vector2{HealthIndex * (25 + (Width / 2)), 25 + (Width / 2)};
+		gl_square NewSquare = MakeSquare(Center, Width, COLOR_RED);
+		PushRenderSquare(GameState, NewSquare);
 	}
 }
 
