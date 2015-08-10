@@ -11,7 +11,7 @@ Lerp(int64 a, int64 b, real32 t)
 
 // NOTE right now collision detection only works for squares
 void
-VectorForceEntity(active_entity *Entity, vector2 InputForce, game_state *GameState)
+ForceEntity(active_entity *Entity, vector2 InputForce, game_state *GameState)
 {
 	InputForce = (InputForce * Entity->MovementSpeed) + (-0.25f * Entity->Velocity);
 	// NOTE these 0.9f here should actually be the previous elapsed frame time. Maybe do that at some point
@@ -20,34 +20,31 @@ VectorForceEntity(active_entity *Entity, vector2 InputForce, game_state *GameSta
 	bool32 CollisionDetected = false;
 	active_entity *EntityHit = {};
 
-	if (Entity->CanCollide)
+	for (int EntityIndex = 0;
+	     EntityIndex < GameState->WorldEntityCount;
+	     EntityIndex++)
 	{
-		for (int EntityIndex = 0;
-		     EntityIndex < GameState->WorldEntityCount;
-		     EntityIndex++)
+		if (GameState->WorldEntities[EntityIndex] != Entity)
 		{
-			if (GameState->WorldEntities[EntityIndex] != Entity)
+			real64 WidthAdding = Entity->Width;
+			vector2 EntityTopLeft =
 			{
-				real64 WidthAdding = Entity->Width;
-				vector2 EntityTopLeft =
-				{
-					GameState->WorldEntities[EntityIndex]->Position.X - ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2),
-					GameState->WorldEntities[EntityIndex]->Position.Y - ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2)
-				};
-				vector2 EntityBottomRight =
-				{
-					GameState->WorldEntities[EntityIndex]->Position.X + ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2),
-					GameState->WorldEntities[EntityIndex]->Position.Y + ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2)
-				};
+				GameState->WorldEntities[EntityIndex]->Position.X - ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2),
+				GameState->WorldEntities[EntityIndex]->Position.Y - ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2)
+			};
+			vector2 EntityBottomRight =
+			{
+				GameState->WorldEntities[EntityIndex]->Position.X + ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2),
+				GameState->WorldEntities[EntityIndex]->Position.Y + ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2)
+			};
 
-				if (NewTestPos.X > EntityTopLeft.X &&
-				    NewTestPos.X < EntityBottomRight.X &&
-				    NewTestPos.Y > EntityTopLeft.Y &&
-				    NewTestPos.Y < EntityBottomRight.Y)
-				{
-					CollisionDetected = true;
-					EntityHit = GameState->WorldEntities[EntityIndex];
-				}
+			if (NewTestPos.X > EntityTopLeft.X &&
+			    NewTestPos.X < EntityBottomRight.X &&
+			    NewTestPos.Y > EntityTopLeft.Y &&
+			    NewTestPos.Y < EntityBottomRight.Y)
+			{
+				CollisionDetected = true;
+				EntityHit = GameState->WorldEntities[EntityIndex];
 			}
 		}
 	}
@@ -59,30 +56,48 @@ VectorForceEntity(active_entity *Entity, vector2 InputForce, game_state *GameSta
 	}
 	else
 	{
+		if (!Entity->IsColliding)
+		{
+			Entity->OnCollide = true;
+		}
+		if (!EntityHit->IsColliding)
+		{
+			EntityHit->OnCollide = true;
+		}
+
+		EntityHit->IsColliding = true;
+		EntityHit->CollidingWith = Entity;
+		Entity->IsColliding = true;
+		Entity->CollidingWith = EntityHit;
+
 		real64 WidthSum = (EntityHit->Width / 2) + (Entity->Width / 2);
 
 		vector2 NewPos = NewTestPos;
 		vector2 NewVelocity = (InputForce * 0.9f) + Entity->Velocity;
-		
+
 		if (Entity->Position.X > (EntityHit->Position.X + WidthSum))
 		{
 			NewVelocity.X = 0;
 			NewPos.X = EntityHit->Position.X + WidthSum + 0.1f;
+			Entity->CollideDirection = vector2{1, 0};
 		}
 		if (Entity->Position.X < (EntityHit->Position.X - WidthSum))
 		{
 			NewVelocity.X = 0;
 			NewPos.X = EntityHit->Position.X - WidthSum - 0.1f;
+			Entity->CollideDirection = vector2{ -1, 0};
 		}
 		if (Entity->Position.Y > (EntityHit->Position.Y + WidthSum))
 		{
 			NewVelocity.Y = 0;
 			NewPos.Y = EntityHit->Position.Y + WidthSum + 0.1f;
+			Entity->CollideDirection = vector2{0, 1};
 		}
 		if (Entity->Position.Y < (EntityHit->Position.Y - WidthSum))
 		{
 			NewVelocity.Y = 0;
 			NewPos.Y = EntityHit->Position.Y - WidthSum - 0.1f;
+			Entity->CollideDirection = vector2{0, -1};
 		}
 
 		Entity->Position = NewPos;
@@ -255,6 +270,7 @@ GLLoadBMP(char *FilePath)
 		*Source++ = (Bit0 << 24) | (Bit1 << 16) | (Bit2 << 8) | (Bit3 << 0);
 	}
 
+
 	glGenTextures(1, &Result.GLTexture);
 	glBindTexture(GL_TEXTURE_2D, Result.GLTexture);
 
@@ -317,7 +333,7 @@ extern "C" GAME_LOOP(GameLoop)
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
 	if (!Memory->IsInitialized)
 	{
-		GameState->PrintFPS = true;
+		GameState->PrintFPS = false;
 
 		LoadAssets(GameState);
 
@@ -343,15 +359,15 @@ extern "C" GAME_LOOP(GameLoop)
 		GameState->Player.Entity.Position.X = WindowInfo->Width / 2;
 		GameState->Player.Entity.Position.Y = WindowInfo->Height / 2;
 		GameState->Player.Entity.Width = 50;
-		GameState->Player.Entity.CanCollide = true;
 		GameState->Player.Entity.MovementSpeed = 3;
 		GameState->Player.Entity.GraphicSquare = MakeSquare(GameState->Player.Entity.Position, GameState->Player.Entity.Width, COLOR_BLUE);
 		GameState->GLSquares[0] = &GameState->Player.Entity.GraphicSquare;
+		GameState->Player.MaxHealth = 3;
+		GameState->Player.CurrHealth = GameState->Player.MaxHealth;
 
 		GameState->Enemy.Position.X = 700.0f;
 		GameState->Enemy.Position.Y = 700.0f;
 		GameState->Enemy.Width = 100;
-		GameState->Enemy.CanCollide = true;
 		GameState->Enemy.MovementSpeed = 1;
 		GameState->Enemy.GraphicSquare = MakeSquare(GameState->Enemy.Position, GameState->Enemy.Width, COLOR_GREEN);
 		GameState->GLSquares[1] = &GameState->Enemy.GraphicSquare;
@@ -405,20 +421,57 @@ extern "C" GAME_LOOP(GameLoop)
 		DirectionPos = Enemy->Position - Player->Entity.Position;
 		DirectionPos = -1 * NormalizeVector2(DirectionPos);
 	}
-	VectorForceEntity(Enemy, DirectionPos, GameState);
+	ForceEntity(Enemy, DirectionPos, GameState);
 
 	vector2 PrevPlayerPos = Player->Entity.Position;
-	VectorForceEntity(&Player->Entity, NormalizeVector2(GameInput->LeftStick), GameState);
+	ForceEntity(&Player->Entity, NormalizeVector2(GameInput->LeftStick), GameState);
 
 	vector2 PlayerCamDifference = Player->Entity.Position - GameState->WorldCenter;
 	GameState->WorldCenter = GameState->WorldCenter + (PlayerCamDifference * 0.08f);
 
+	if (Player->Entity.OnCollide)
+	{
+		DebugLine("Losing Health", GameState);
+		Player->CurrHealth--;
+		if (Player->CurrHealth == 0)
+		{
+			DebugLine("DEAD", GameState);
+		}
+	}
 
 	for (int EntityIndex = 0;
 	     EntityIndex < GameState->WorldEntityCount;
 	     EntityIndex++)
 	{
-		UpdateSquare(GameState->WorldEntities[EntityIndex]);
+		active_entity *EntityAbout = GameState->WorldEntities[EntityIndex];
+		if (EntityAbout->IsColliding)
+		{
+			vector2 CollideDirection = EntityAbout->CollideDirection;
+			real64 WidthSum = (EntityAbout->Width / 2) + (EntityAbout->CollidingWith->Width / 2) + 0.2f;
+
+			if (CollideDirection.X > 0  &&
+			    (EntityAbout->Position.X > (EntityAbout->CollidingWith->Position.X + WidthSum)) ||
+			    (EntityAbout->Position.Y > (EntityAbout->CollidingWith->Position.Y + WidthSum)) ||
+			    (EntityAbout->Position.Y < (EntityAbout->CollidingWith->Position.Y - WidthSum)))
+			{
+				EntityAbout->CollidingWith->IsColliding = false;
+				EntityAbout->IsColliding = false;
+			}
+			if (CollideDirection.X < 0  &&
+			    (EntityAbout->Position.X < (EntityAbout->CollidingWith->Position.X - WidthSum)) ||
+			    (EntityAbout->Position.Y > (EntityAbout->CollidingWith->Position.Y + WidthSum)) ||
+			    (EntityAbout->Position.Y < (EntityAbout->CollidingWith->Position.Y - WidthSum)))
+			{
+				EntityAbout->CollidingWith->IsColliding = false;
+				EntityAbout->IsColliding = false;
+			}
+
+			// NOTE I don't need to check the positive and negative y directions. I'm not quite sure why not.
+		}
+
+		EntityAbout->OnCollide = false;
+
+		UpdateSquare(EntityAbout);
 	}
 }
 

@@ -25,7 +25,7 @@
 		0 - No slow code allowed
 		1 - Slow code allowed
 
-	INTernAL:
+	INTERNAL:
 		0 - Build on dev machine
 		1 - Build on release machine
 */
@@ -211,12 +211,18 @@ struct active_entity
 
 	gl_square GraphicSquare;
 
-	bool32 CanCollide;
+	bool32 OnCollide;
+	bool32 IsColliding;
+	active_entity *CollidingWith;
+	vector2 CollideDirection;
 };
 
 struct player
 {
 	active_entity Entity;
+
+	int8 MaxHealth;
+	int8 CurrHealth;
 };
 
 struct game_state

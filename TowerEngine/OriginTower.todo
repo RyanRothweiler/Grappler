@@ -2,6 +2,10 @@ General:
    ☐ put in safeguards so when loading a savestate from a previous version it doesn't crash
    ☐ create some movement based on time, to smooth things out
 
+Gameplay:
+   ☐ test enemy which moves to random locations
+   ☐ latching onto an the test enemy
+
 Code:
    ☐ Find a way to assert the size of an array is not greater than we think it is
    ☐ Some controller button to stop the code where and when I want 
@@ -14,9 +18,6 @@ UI:
    ☐ show fps in game
 
 Physics:
-   ☐ collision checking allowing IsColliding
-   ☐ collision checking allowing OnCollision
-   ☐ player takes damage using the above collision features
 
 Audio:
    ☐ extend audio to support stereo
@@ -38,6 +39,9 @@ Color:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+ ✔ collision checking allowing IsColliding @done (15-08-07 01:47) @project(Physics)
+ ✔ collision checking allowing OnCollision @done (15-08-07 01:47) @project(Physics)
+ ✔ player takes damage using the above collision features @done (15-08-07 02:18) @project(Physics)
  ✔ test all these collision features with different sized squares @done (15-08-06 10:41) @project(Physics)
  ✔ allow colliding objects to slide on eachother @done (15-08-06 10:40) @project(Physics)
  ✔ when objects collide move the collider the difference so no gaps @done (15-08-06 09:12) @project(Physics)
