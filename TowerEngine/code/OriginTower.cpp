@@ -351,7 +351,7 @@ extern "C" GAME_LOOP(GameLoop)
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
 	if (!Memory->IsInitialized)
 	{
-		GameState->PrintFPS = false;
+		GameState->PrintFPS = true;
 
 		LoadAssets(GameState);
 
@@ -360,12 +360,12 @@ extern "C" GAME_LOOP(GameLoop)
 		uint16 XCount = 10;
 		uint16 YCount = 10;
 		GameState->BackgroundPositionsCount = XCount * YCount;
-		for (uint16 BackgroundX = 0;
-		     BackgroundX < XCount;
+		for (int16 BackgroundX = (XCount / 2) * -1;
+		     BackgroundX < (XCount / 2);
 		     BackgroundX++)
 		{
-			for (uint16 BackgroundY = 0;
-			     BackgroundY < YCount;
+			for (int16 BackgroundY = (YCount / 2) * -1;
+			     BackgroundY < YCount / 2;
 			     BackgroundY++)
 			{
 				GameState->BackgroundPositions[PosCount] = vector2{BackgroundX * GameState->BackgroundImage.Width,

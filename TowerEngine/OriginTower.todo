@@ -1,19 +1,20 @@
 Working on:
-   ☐ infinitely tileable background
-
-General:
-   ☐ put in safeguards so when loading a savestate from a previous version it doesn't crash
-   ☐ create some movement based on time, to smooth things out
-
-Gameplay:
    ☐ test enemy which moves to random locations
+   ☐ a random int generator within a range
+   ☐ a random float generator within a range
    ☐ change player over to an image 
    ☐ create a facing direction for the player
    ☐ the player always faces in the directionm he is moving 
+
+Gameplay:
    ☐ latching onto an the test enemy
    ☐ generate four walls
    ☐ give enemies health
    ☐ destory enemies when they die
+
+General:
+   ☐ put in safeguards so when loading a savestate from a previous version it doesn't crash
+   ☐ create some movement based on time, to smooth things out
 
 
 
@@ -40,6 +41,7 @@ Graphics:
    ☐ create a render order
    ☐ transparent bitmaps
    ☐ test background moving with camera
+   ☐ handle resizing the window
 
 Color:
    ☐ Change color to use floats (0.0 - 1.0) instead of (0 - 255)
@@ -49,6 +51,7 @@ Color:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+ ✔ infinitely tileable background (didn't make infinite, but it's quite large) @done (15-08-12 07:55) @project(Working on)
  ✔ visualize player health in ui @done (15-08-10 11:45) @project(Working on)
  ✔ create an interface with the platform layer to render loaded_images at locations. @done (15-08-10 11:45) @project(Working on)
  ✔ move world zero offset into game layer. only talk to the platform layer through a list of gl squares @done (15-08-10 11:24) @project(Working on)
