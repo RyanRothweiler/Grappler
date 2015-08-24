@@ -3,10 +3,37 @@
 
 static platform_read_file *PlatformReadFile;
 
+vector2 EnemyTargetPosition;
+
 int64
 Lerp(int64 a, int64 b, real32 t)
 {
 	return (int64)(a + t * (b - a));
+}
+
+real64
+RandomRangeFloat(real32 Bottom, real32 Top, game_state *GameState)
+{
+	Assert(Bottom < Top);
+	real64 Result = 0;
+
+	uint32 RandomMax = 1000;
+	uint32 RandomInt = (10 * GameState->RandomGenState % RandomMax);
+	real64 RandomScalar = (real32)RandomInt / (real32)RandomMax;
+
+	real64 ScaledNum = (real64)((Top - Bottom) * RandomScalar);
+	Result = ScaledNum + Bottom;
+
+	GameState->RandomGenState += GameState->RandomGenState;
+
+	return (Result);
+}
+
+int64
+RandomRangeInt(int32 Bottom, int32 Top, game_state *GameState)
+{
+	real64 Result = RandomRangeFloat((real32)Bottom, (real32)Top, GameState);
+	return ((int64)Result);
 }
 
 // NOTE right now collision detection only works for squares
@@ -262,6 +289,7 @@ GLLoadBMP(char *FilePath)
 	     ++PixelIndex)
 	{
 		uint8 *Pixel = (uint8 *)Source;
+
 		uint8 Bit2 = *Pixel++; // A
 		uint8 Bit3 = *Pixel++; // R
 		uint8 Bit0 = *Pixel++; // G
@@ -294,6 +322,7 @@ LoadAssets(game_state *GameState)
 	GameState->TestNote = LoadWave("../assets/testNote.wav");
 
 	GameState->BackgroundImage = GLLoadBMP("../assets/Background.bmp");
+	GameState->PlayerImage = GLLoadBMP("../assets/Player.bmp");
 
 	// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
 	DebugLine("Loaded", GameState);
@@ -333,6 +362,8 @@ PushRenderTexture(game_state *GameState, gl_texture Texture)
 	Assert(_countof(GameState->RenderTextures) > GameState->RenderTexturesCount);
 	GameState->RenderTextures[GameState->RenderTexturesCount].Image = Texture.Image;
 	GameState->RenderTextures[GameState->RenderTexturesCount].Center = Texture.Center;
+	GameState->RenderTextures[GameState->RenderTexturesCount].Scale = Texture.Scale;
+	GameState->RenderTextures[GameState->RenderTexturesCount].RadiansAngle = Texture.RadiansAngle;
 	GameState->RenderTexturesCount++;
 }
 
@@ -341,6 +372,15 @@ AddWorldEntity(game_state *GameState, active_entity *Entity)
 {
 	GameState->WorldEntities[GameState->WorldEntityCount] = Entity;
 	GameState->WorldEntityCount++;
+}
+
+void
+ControllerAssert(input_button *Button)
+{
+	if (Button->IsDown)
+	{
+		Assert(0);
+	}
 }
 
 extern "C" GAME_LOOP(GameLoop)
@@ -379,15 +419,16 @@ extern "C" GAME_LOOP(GameLoop)
 
 		GameState->Player.Entity.Position.X = WindowInfo->Width / 2;
 		GameState->Player.Entity.Position.Y = WindowInfo->Height / 2;
-		GameState->Player.Entity.Width = 50;
-		GameState->Player.Entity.MovementSpeed = 3;
+		GameState->Player.Entity.Width = 40;
+		GameState->Player.Entity.MovementSpeed = 2;
 		GameState->Player.Entity.Color = COLOR_BLUE;
+		GameState->Player.Entity.Image = &GameState->PlayerImage;
 		GameState->Player.CurrHealth = 3;
 		AddWorldEntity(GameState, &GameState->Player.Entity);
 
 		GameState->Enemy.Position.X = 700.0f;
 		GameState->Enemy.Position.Y = 700.0f;
-		GameState->Enemy.Width = 100;
+		GameState->Enemy.Width = 20;
 		GameState->Enemy.MovementSpeed = 1;
 		GameState->Enemy.Color = COLOR_GREEN;
 		AddWorldEntity(GameState, &GameState->Enemy);
@@ -397,8 +438,10 @@ extern "C" GAME_LOOP(GameLoop)
 
 		AudioBuffer->RunningSampleIndex = 0;
 
-		Memory->IsInitialized = true;
+		EnemyTargetPosition.X = GameState->Enemy.Position.X + RandomRangeInt(-200, 200, GameState);
+		EnemyTargetPosition.Y = GameState->Enemy.Position.Y + RandomRangeInt(-200, 200, GameState);
 
+		Memory->IsInitialized = true;
 		// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
 		DebugLine("Initialized", GameState);
 	}
@@ -412,6 +455,12 @@ extern "C" GAME_LOOP(GameLoop)
 	if (GameInput->BButton.OnDown)
 	{
 		GameState->TestNoteSampleIndex = 0;
+	}
+
+	if (GameInput->YButton.OnDown)
+	{
+		real64 RandomNum = RandomRangeFloat(0.0f, 5.0f, GameState);
+		real64 Derp = 0.0f;
 	}
 
 	// NOTE Sound doesn't work well at all when fps drops below 60
@@ -432,17 +481,26 @@ extern "C" GAME_LOOP(GameLoop)
 	}
 	GameState->TestNoteSampleIndex += AudioBuffer->SampleCount;
 
-
-	vector2 DirectionPos = {};
-	if (GameInput->YButton.IsDown)
+	real64 Distance = Vector2Distance(Enemy->Position, EnemyTargetPosition);
+	if (Distance < 2.0f)
 	{
-		DirectionPos = Enemy->Position - Player->Entity.Position;
-		DirectionPos = -1 * NormalizeVector2(DirectionPos);
+		EnemyTargetPosition.X = (real64)RandomRangeInt(-200, 200, GameState);
+		EnemyTargetPosition.Y = (real64)RandomRangeInt(-200, 200, GameState);
 	}
+	vector2 DirectionPos = {};
+	DirectionPos = Enemy->Position - EnemyTargetPosition;
+	DirectionPos = -1 * Vector2Normalize(DirectionPos);
 	ForceEntity(Enemy, DirectionPos, GameState);
 
 	vector2 PrevPlayerPos = Player->Entity.Position;
-	ForceEntity(&Player->Entity, NormalizeVector2(GameInput->LeftStick), GameState);
+	ForceEntity(&Player->Entity, Vector2Normalize(GameInput->LeftStick), GameState);
+	if (GameInput->LeftStick.X > 0.5f ||
+	    GameInput->LeftStick.X < -0.5f ||
+	    GameInput->LeftStick.Y > 0.5f ||
+	    GameInput->LeftStick.Y < -0.5f)
+	{
+		Player->FacingDirection = Vector2Normalize(GameInput->LeftStick);
+	}
 
 	vector2 PlayerCamDifference = Player->Entity.Position - GameState->WorldCenter;
 	GameState->WorldCenter = GameState->WorldCenter + (PlayerCamDifference * 0.08f);
@@ -467,6 +525,7 @@ extern "C" GAME_LOOP(GameLoop)
 		gl_texture Texture = {};
 		Texture.Image = &GameState->BackgroundImage;
 		Texture.Center = GameState->BackgroundPositions[PosCount] - WorldCenter;
+		Texture.Scale = vector2{1000, 1000};
 		PushRenderTexture(GameState, Texture);
 	}
 
@@ -497,15 +556,30 @@ extern "C" GAME_LOOP(GameLoop)
 				EntityAbout->IsColliding = false;
 			}
 			// NOTE I don't need to check the positive and negative y directions. I'm not quite sure why not.
-
 		}
 
 		EntityAbout->OnCollide = false;
 
-		vector2 EntityWorldCenter = EntityAbout->Position - WorldCenter;
-		gl_square NewSquare = MakeSquare(EntityWorldCenter, EntityAbout->Width, EntityAbout->Color);
-		PushRenderSquare(GameState, NewSquare);
+		if (!EntityAbout->Image)
+		{
+			vector2 EntityWorldCenter = EntityAbout->Position - WorldCenter;
+			gl_square NewSquare = MakeSquare(EntityWorldCenter, EntityAbout->Width, EntityAbout->Color);
+			PushRenderSquare(GameState, NewSquare);
+		}
 	}
+
+	gl_texture Texture = {};
+	Texture.Image = Player->Entity.Image;
+	Texture.Center = Player->Entity.Position - WorldCenter;
+	Texture.Scale = vector2{Player->Entity.Width / 2, Player->Entity.Width / 2};
+	real64 Angle = acos(DotProduct(Player->FacingDirection, vector2{1, 0}) /
+	                    (VectorLength(Player->FacingDirection) * VectorLength(vector2{1, 0})));
+	if (Player->FacingDirection.Y > 0)
+	{
+		Angle = Angle * -1;
+	}
+	Texture.RadiansAngle = Angle;
+	PushRenderTexture(GameState, Texture);
 
 	for (int HealthIndex = 1;
 	     HealthIndex < GameState->Player.CurrHealth + 1;

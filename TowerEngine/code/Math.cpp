@@ -1,4 +1,6 @@
 #include "Vector2.h"
+#include <math.h>
+
 
 int64
 SquareInt(int64 input)
@@ -69,3 +71,32 @@ Abs(real64 A)
 		return (A * -1);
 	}
 }
+
+real64
+DotProduct(vector2 A, vector2 B)
+{
+	real64 Result;
+	Result = (A.X * B.X) + (A.Y * B.Y);
+	return (Result);
+}
+
+real64
+Cos(real64 Input)
+{
+	return (cos(Input));
+}
+
+real64
+ArcCos(real64 Input)
+{
+	return (acos(Input));
+}
+
+real64 
+Sin(real64 Input)
+{
+	return (sin(Input));
+}
+
+
+const real64 PI = 3.14159f;

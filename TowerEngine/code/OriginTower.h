@@ -203,7 +203,10 @@ struct gl_square
 struct gl_texture
 {
 	loaded_image *Image;
+	
 	vector2 Center;
+	vector2 Scale;
+	real64 RadiansAngle;
 };
 
 struct active_entity
@@ -220,12 +223,15 @@ struct active_entity
 	bool32 IsColliding;
 	active_entity *CollidingWith;
 	vector2 CollideDirection;
+
+	loaded_image *Image;
 };
 
 struct player
 {
 	active_entity Entity;
 
+	vector2 FacingDirection;
 	int8 CurrHealth;
 };
 
@@ -235,6 +241,8 @@ struct game_state
 	active_entity *WorldEntities[50];
 
 	player Player;
+	loaded_image PlayerImage;
+
 	active_entity Enemy;
 
 	uint32 PlayerHealthCount;
@@ -254,6 +262,8 @@ struct game_state
 
 	vector2 WorldCenter;
 	vector2 CamCenter;
+
+	int64 RandomGenState;
 
 	bool PrintFPS;
 	char *DebugOutput = "";

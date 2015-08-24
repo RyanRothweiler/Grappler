@@ -1,10 +1,7 @@
 Working on:
-   ☐ test enemy which moves to random locations
-   ☐ a random int generator within a range
-   ☐ a random float generator within a range
-   ☐ change player over to an image 
-   ☐ create a facing direction for the player
-   ☐ the player always faces in the directionm he is moving 
+   ☐ create collision box which is separate from image size
+   ☐ smooth out the facing forward rotation of the player 
+   ☐ create a visible latching radius
 
 Gameplay:
    ☐ latching onto an the test enemy
@@ -15,13 +12,14 @@ Gameplay:
 General:
    ☐ put in safeguards so when loading a savestate from a previous version it doesn't crash
    ☐ create some movement based on time, to smooth things out
-
-
+   ☐ Combine the RenderSquares and RenderImges list. So those can be drawn and layered separately
+ 
 
 
 
 Code:
    ☐ Some controller button to stop the code where and when I want 
+   ☐ look at using intrinsics for some of the math functions
 
 UI:
    ☐ ui button with normal / selected / down states
@@ -38,9 +36,6 @@ File:
    ☐ Show warning when a file cannot be found
 
 Graphics:
-   ☐ create a render order
-   ☐ transparent bitmaps
-   ☐ test background moving with camera
    ☐ handle resizing the window
 
 Color:
@@ -52,8 +47,21 @@ Color:
 
 
 
+
+
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+ ✔ the player always faces in the directionm he is moving  @done (15-08-24 16:04) @project(Working on)
+ ✔ create a facing direction for the player @done (15-08-24 15:37) @project(Working on)
+ ✔ open gl rotate image @done (15-08-23 21:24) @project(Working on)
+ ✔ change player over to an image  @done (15-08-23 21:24) @project(Working on)
+ ✔ transparent bitmaps @done (15-08-23 19:46) @project(Working on)
+ ✔ create a render order (did this a little. r) @done (15-08-23 18:34) @project(Working on)
+ ✔ test background moving with camera @done (15-08-23 18:23) @project(Graphics)
+ ✔ a random dfloat generator within a range @done (15-08-23 13:24) @project(Working on)
+ ✔ test enemy which moves to random locations @done (15-08-23 12:50) @project(Working on)
+ ✔ add some other entropy into random number gen. Initializing with a random number always chooses the same value @done (15-08-23 12:50) @project(General)
+ ✔ a random int generator within a range @done (15-08-23 12:50) @project(Working on)
  ✔ infinitely tileable background (didn't make infinite, but it's quite large) @done (15-08-12 07:55) @project(Working on)
  ✔ visualize player health in ui @done (15-08-10 11:45) @project(Working on)
  ✔ create an interface with the platform layer to render loaded_images at locations. @done (15-08-10 11:45) @project(Working on)

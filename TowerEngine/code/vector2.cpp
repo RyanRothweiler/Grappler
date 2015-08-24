@@ -77,19 +77,25 @@ bool32 operator>(vector2 A, int32 B)
 	if (A.X > B &&
 	    A.Y > B)
 	{
-		return(true);
+		return (true);
 	}
-	return(false);
+	return (false);
+}
+
+real64
+VectorLength(vector2 A)
+{
+	return (SquareRoot((A.X * A.X) + (A.Y * A.Y)));
 }
 
 vector2
-NormalizeVector2(vector2 Input)
+Vector2Normalize(vector2 Input)
 {
 	vector2 Output = {};
 
-	real64 VectorLength = SquareRoot((Input.X * Input.X) + (Input.Y * Input.Y));
-	Output.X = Input.X / VectorLength;
-	Output.Y = Input.Y / VectorLength;
+	real64 Length = VectorLength(Input);
+	Output.X = Input.X / Length;
+	Output.Y = Input.Y / Length;
 
 	return (Output);
 }
@@ -103,5 +109,6 @@ Vector2Distance(vector2 A, vector2 B)
 	Output = SquareRoot((ASideLength * ASideLength) + (BSideLength * BSideLength));
 	return (Abs(Output));
 }
+
 
 const vector2 VECTOR2_ZERO = vector2{0, 0};

@@ -4,7 +4,6 @@ static bool PRINTFPS = false;
 
 #include "OriginTower.h"
 
-
 bool GlobalRunning = true;
 window_info ScreenBuffer;
 int64 ElapsedFrameCount;
@@ -470,6 +469,15 @@ CheckSaveState(char *FilePath, input_button *ButtonChecking, bool32 SelectIsDown
 	}
 }
 
+vector2
+RotatePoint(vector2 OriginalPoint, vector2 Center, real64 Angle)
+{
+	vector2 Result = {};
+	Result.X = Center.X + ((OriginalPoint.X - Center.X) * cos(Angle)) + ((OriginalPoint.Y - Center.Y) * sin(Angle));
+	Result.Y = Center.Y - ((OriginalPoint.X - Center.X) * sin(Angle)) + ((OriginalPoint.Y - Center.Y) * cos(Angle));
+	return (Result);
+}
+
 int32 main (int32 argc, char **argv)
 {
 	if (!glfwInit())
@@ -479,8 +487,8 @@ int32 main (int32 argc, char **argv)
 	}
 
 	ScreenBuffer = {};
-	ScreenBuffer.Width = 1920;
-	ScreenBuffer.Height = 1080;
+	ScreenBuffer.Width = 1366;
+	ScreenBuffer.Height = 768;
 
 	GLFWwindow* OpenGLWindow = glfwCreateWindow(ScreenBuffer.Width, ScreenBuffer.Height, "Origin Tower", NULL, NULL);
 	if (!OpenGLWindow)
@@ -551,7 +559,6 @@ int32 main (int32 argc, char **argv)
 			GlobalRunning = false;
 		}
 
-
 		FILETIME NewDLLWriteTime = GetGameCodeLastWriteTime();
 		if (CompareFileTime(&NewDLLWriteTime, &GameCodeLastWriteTime) != 0)
 		{
@@ -602,7 +609,7 @@ int32 main (int32 argc, char **argv)
 			}
 		}
 
-		CheckSaveState("SateSlot1.ts", &GameInput.R1, GameInput.Select.IsDown, &GameMemory, &GameCode);
+		// CheckSaveState("SateSlot1.ts", &GameInput.R1, GameInput.Select.IsDown, &GameMemory, &GameCode);
 		CheckSaveState("SateSlot2.ts", &GameInput.L1, GameInput.Select.IsDown, &GameMemory, &GameCode);
 		CheckSaveState("SateSlot3.ts", &GameInput.R2, GameInput.Select.IsDown, &GameMemory, &GameCode);
 		CheckSaveState("SateSlot4.ts", &GameInput.L2, GameInput.Select.IsDown, &GameMemory, &GameCode);
@@ -682,25 +689,64 @@ int32 main (int32 argc, char **argv)
 			GameStateFromMemory->DebugOutput = EmptyChar;
 		}
 
+		SYSTEMTIME SystemTime = {};
+		GetSystemTime(&SystemTime);
+		GameStateFromMemory->RandomGenState += SystemTime.wMilliseconds + SystemTime.wSecond + SystemTime.wMinute +
+		                                       SystemTime.wDay + SystemTime.wMonth + SystemTime.wYear;
+		if (GameStateFromMemory->RandomGenState > 100000)
+		{
+			GameStateFromMemory->RandomGenState = 0;
+		}
+
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		for (uint32 PosCount = 0;
 		     PosCount < (uint32)GameStateFromMemory->RenderTexturesCount;
 		     PosCount++)
 		{
+			glPushMatrix();
+
+
 			vector2 Center = GameStateFromMemory->RenderTextures[PosCount].Center;
-			loaded_image Image = *GameStateFromMemory->RenderTextures->Image;
+			vector2 Scale = GameStateFromMemory->RenderTextures[PosCount].Scale;
 			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, Image.GLTexture);
+
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+			glBindTexture(GL_TEXTURE_2D, GameStateFromMemory->RenderTextures[PosCount].Image->GLTexture);
 			glBegin(GL_QUADS);
 			{
 				glColor3f(1.0f, 1.0f, 1.0f);
-				glTexCoord2f(0, 1); glVertex2f((GLfloat)(Center.X - Image.Width), (GLfloat)(Center.Y - Image.Height));
-				glTexCoord2f(1, 1); glVertex2f((GLfloat)(Center.X + Image.Width), (GLfloat)(Center.Y - Image.Height));
-				glTexCoord2f(1, 0); glVertex2f((GLfloat)(Center.X + Image.Width), (GLfloat)(Center.Y + Image.Height));
-				glTexCoord2f(0, 0); glVertex2f((GLfloat)(Center.X - Image.Width), (GLfloat)(Center.Y + Image.Height));
+
+				real64 Radians = GameStateFromMemory->RenderTextures[PosCount].RadiansAngle;
+
+				vector2 RotatedPoint = {};
+				vector2 OrigPoint = {};
+
+				OrigPoint = {Center.X - Scale.X, Center.Y - Scale.Y};
+				RotatedPoint = RotatePoint(OrigPoint, Center, Radians);
+				glTexCoord2f(0, 1);
+				glVertex2f((GLfloat)RotatedPoint.X, (GLfloat)RotatedPoint.Y);
+
+				OrigPoint = {Center.X + Scale.X, Center.Y - Scale.Y};
+				RotatedPoint = RotatePoint(OrigPoint, Center, Radians);
+				glTexCoord2f(1, 1);
+				glVertex2f((GLfloat)RotatedPoint.X, (GLfloat)RotatedPoint.Y);
+
+				OrigPoint = {Center.X + Scale.X, Center.Y + Scale.Y};
+				RotatedPoint = RotatePoint(OrigPoint, Center, Radians);
+				glTexCoord2f(1, 0);
+				glVertex2f((GLfloat)RotatedPoint.X, (GLfloat)RotatedPoint.Y);
+
+				OrigPoint = {Center.X - Scale.X, Center.Y + Scale.Y};
+				RotatedPoint = RotatePoint(OrigPoint, Center, Radians);
+				glTexCoord2f(0, 0);
+				glVertex2f((GLfloat)RotatedPoint.X, (GLfloat)RotatedPoint.Y);
 			}
 			glEnd();
+
+			glPopMatrix();
 		}
 
 		glBindTexture(GL_TEXTURE_2D, 0);
