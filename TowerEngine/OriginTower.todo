@@ -1,45 +1,40 @@
 Working on:
-   ☐ create collision box which is separate from image size
-   ☐ smooth out the facing forward rotation of the player 
-   ☐ create a visible latching radius
-
-Gameplay:
-   ☐ latching onto an the test enemy
-   ☐ generate four walls
+   ☐ show grapple iamge
+   ☐ grapple onto an the test enemy
    ☐ give enemies health
+   ☐ visualize enemies health with a bar on screen
    ☐ destory enemies when they die
+   ☐ generate four walls
+   ☐ flash the screen red when hit an enemy
+   ☐ test things with two enemies
+
 
 General:
    ☐ put in safeguards so when loading a savestate from a previous version it doesn't crash
    ☐ create some movement based on time, to smooth things out
-   ☐ Combine the RenderSquares and RenderImges list. So those can be drawn and layered separately
+   ☐ Combine the RenderSquares and RenderImges list. So those can be drawn and layered together
+   ☐ switch player health over to images
+   ☐ create an animated sprite
+
+Gameplay:
  
-
-
-
-Code:
-   ☐ Some controller button to stop the code where and when I want 
+Later:
    ☐ look at using intrinsics for some of the math functions
+   ☐ extend audio to support stereo
+   ☐ handle resizing the window
+   ☐ Change color to use floats (0.0 - 1.0) instead of (0 - 255)
+   ☐ when pushing a square or texture, I'm creating a lot of temporary data. Maybe keep that data around but edit it when pushing
+   ☐ create a way to visualize all the collider boxes for every entity
 
 UI:
    ☐ ui button with normal / selected / down states
    ☐ ui button concept
    ☐ rendering text on screen from font file
    ☐ show fps in game
+   ☐ show warnings on screen in game. such as warning when file not found
 
-Physics:
-
-Audio:
-   ☐ extend audio to support stereo
-
-File:
-   ☐ Show warning when a file cannot be found
-
-Graphics:
-   ☐ handle resizing the window
-
-Color:
-   ☐ Change color to use floats (0.0 - 1.0) instead of (0 - 255)
+Bugs:
+   ☐ player rotation seems to snap to a few values. moving the player in a circle isn't smooth
 
   
 
@@ -51,6 +46,11 @@ Color:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+ ✔ show the player when r1 is being held but still allow latching. @done (15-08-26 20:46) @project(Working on)
+ ✔ create a visible latching radius @done (15-08-26 20:19) @project(Working on)
+ ✔ smooth out the facing forward rotation of the player  @done (15-08-24 21:10) @project(Working on)
+ ✔ create collision box which is separate from image size @done (15-08-24 20:55) @project(Working on)
+ ✔ Some controller button to stop the code where and when I want  @done (15-08-24 20:42) @project(Other)
  ✔ the player always faces in the directionm he is moving  @done (15-08-24 16:04) @project(Working on)
  ✔ create a facing direction for the player @done (15-08-24 15:37) @project(Working on)
  ✔ open gl rotate image @done (15-08-23 21:24) @project(Working on)

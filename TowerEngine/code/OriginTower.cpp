@@ -53,16 +53,16 @@ ForceEntity(active_entity *Entity, vector2 InputForce, game_state *GameState)
 	{
 		if (GameState->WorldEntities[EntityIndex] != Entity)
 		{
-			real64 WidthAdding = Entity->Width;
+			real64 WidthAdding = Entity->ColliderWidth;
 			vector2 EntityTopLeft =
 			{
-				GameState->WorldEntities[EntityIndex]->Position.X - ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2),
-				GameState->WorldEntities[EntityIndex]->Position.Y - ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2)
+				GameState->WorldEntities[EntityIndex]->Position.X - ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2),
+				GameState->WorldEntities[EntityIndex]->Position.Y - ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2)
 			};
 			vector2 EntityBottomRight =
 			{
-				GameState->WorldEntities[EntityIndex]->Position.X + ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2),
-				GameState->WorldEntities[EntityIndex]->Position.Y + ((GameState->WorldEntities[EntityIndex]->Width + WidthAdding) / 2)
+				GameState->WorldEntities[EntityIndex]->Position.X + ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2),
+				GameState->WorldEntities[EntityIndex]->Position.Y + ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2)
 			};
 
 			if (NewTestPos.X > EntityTopLeft.X &&
@@ -97,7 +97,7 @@ ForceEntity(active_entity *Entity, vector2 InputForce, game_state *GameState)
 		Entity->IsColliding = true;
 		Entity->CollidingWith = EntityHit;
 
-		real64 WidthSum = (EntityHit->Width / 2) + (Entity->Width / 2);
+		real64 WidthSum = (EntityHit->ColliderWidth / 2) + (Entity->ColliderWidth / 2);
 
 		vector2 NewPos = NewTestPos;
 		vector2 NewVelocity = (InputForce * 0.9f) + Entity->Velocity;
@@ -282,6 +282,12 @@ GLLoadBMP(char *FilePath)
 		// NOTE this number offset here is pulled from my ass. The offset in the image doesn't seem to work.
 		BitmapPixels = ((uint32 *)FileResult.Contents + 35);
 	}
+	else
+	{
+		// Something went wrong with loading the bmp
+		// NOTE will eventually want to just show a warning. But don't crash the game.
+		Assert(0);
+	}
 
 	uint32 *Source = (uint32 *)BitmapPixels;
 	for (uint32 PixelIndex = 0;
@@ -323,6 +329,7 @@ LoadAssets(game_state *GameState)
 
 	GameState->BackgroundImage = GLLoadBMP("../assets/Background.bmp");
 	GameState->PlayerImage = GLLoadBMP("../assets/Player.bmp");
+	GameState->GrappleRadiusImage = GLLoadBMP("../assets/LatchRadius.bmp");
 
 	// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
 	DebugLine("Loaded", GameState);
@@ -383,6 +390,13 @@ ControllerAssert(input_button *Button)
 	}
 }
 
+void
+KillEntity(active_entity *Entity)
+{
+	Entity->Alive = false;
+	Entity->Position = vector2{90000, 90000};
+}
+
 extern "C" GAME_LOOP(GameLoop)
 {
 	PlatformReadFile = Memory->PlatformReadFile;
@@ -391,7 +405,7 @@ extern "C" GAME_LOOP(GameLoop)
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
 	if (!Memory->IsInitialized)
 	{
-		GameState->PrintFPS = true;
+		GameState->PrintFPS = false;
 
 		LoadAssets(GameState);
 
@@ -419,18 +433,24 @@ extern "C" GAME_LOOP(GameLoop)
 
 		GameState->Player.Entity.Position.X = WindowInfo->Width / 2;
 		GameState->Player.Entity.Position.Y = WindowInfo->Height / 2;
-		GameState->Player.Entity.Width = 40;
+		GameState->Player.Entity.ColliderWidth = 20;
+		GameState->Player.Entity.ImageWidth = 40;
 		GameState->Player.Entity.MovementSpeed = 2;
+		GameState->Player.CurrMovementSpeed = GameState->Player.Entity.MovementSpeed;
+		GameState->Player.MaxMovementSpeed = GameState->Player.Entity.MovementSpeed;
 		GameState->Player.Entity.Color = COLOR_BLUE;
+		GameState->Player.Entity.Alive = true;
 		GameState->Player.Entity.Image = &GameState->PlayerImage;
 		GameState->Player.CurrHealth = 3;
 		AddWorldEntity(GameState, &GameState->Player.Entity);
 
 		GameState->Enemy.Position.X = 700.0f;
 		GameState->Enemy.Position.Y = 700.0f;
-		GameState->Enemy.Width = 20;
+		GameState->Enemy.ImageWidth = 20;
+		GameState->Enemy.ColliderWidth = GameState->Enemy.ImageWidth;
 		GameState->Enemy.MovementSpeed = 1;
 		GameState->Enemy.Color = COLOR_GREEN;
+		GameState->Enemy.Alive = true;
 		AddWorldEntity(GameState, &GameState->Enemy);
 
 		GameState->WorldCenter = vector2{0, 0};
@@ -481,25 +501,64 @@ extern "C" GAME_LOOP(GameLoop)
 	}
 	GameState->TestNoteSampleIndex += AudioBuffer->SampleCount;
 
-	real64 Distance = Vector2Distance(Enemy->Position, EnemyTargetPosition);
-	if (Distance < 2.0f)
+	if (Enemy->Alive)
 	{
-		EnemyTargetPosition.X = (real64)RandomRangeInt(-200, 200, GameState);
-		EnemyTargetPosition.Y = (real64)RandomRangeInt(-200, 200, GameState);
+		real64 Distance = Vector2Distance(Enemy->Position, EnemyTargetPosition);
+		if (Distance < 5.0f)
+		{
+			EnemyTargetPosition.X = (real64)RandomRangeInt(-200, 200, GameState);
+			EnemyTargetPosition.Y = (real64)RandomRangeInt(-200, 200, GameState);
+		}
+		vector2 DirectionPos = {};
+		DirectionPos = Enemy->Position - EnemyTargetPosition;
+		DirectionPos = -1 * Vector2Normalize(DirectionPos);
+		ForceEntity(Enemy, DirectionPos, GameState);
 	}
-	vector2 DirectionPos = {};
-	DirectionPos = Enemy->Position - EnemyTargetPosition;
-	DirectionPos = -1 * Vector2Normalize(DirectionPos);
-	ForceEntity(Enemy, DirectionPos, GameState);
 
+	if (GameInput->R1.IsDown)
+	{
+		Player->CurrMovementSpeed = Player->MaxMovementSpeed * 0.2f;
+
+		Player->IsGrappled = false;
+
+		bool32 FoundEntity = false;
+		for (int EntityIndex = 0;
+		     EntityIndex < GameState->WorldEntityCount;
+		     EntityIndex++)
+		{
+			if (!FoundEntity)
+			{
+				active_entity *EntityAbout = GameState->WorldEntities[EntityIndex];
+				if (EntityAbout->Alive && EntityAbout != &Player->Entity)
+				{
+					if (Vector2Distance(EntityAbout->Position, Player->Entity.Position) < 90)
+					{
+						FoundEntity = true;
+						Player->IsGrappled = true;
+						Player->GrappledEntity = EntityAbout;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		Player->CurrMovementSpeed = Player->MaxMovementSpeed;
+	}
+
+	if (Player->IsGrappled)
+	{
+		
+	}
+
+	Player->Entity.MovementSpeed = Player->CurrMovementSpeed;
 	vector2 PrevPlayerPos = Player->Entity.Position;
 	ForceEntity(&Player->Entity, Vector2Normalize(GameInput->LeftStick), GameState);
-	if (GameInput->LeftStick.X > 0.5f ||
-	    GameInput->LeftStick.X < -0.5f ||
-	    GameInput->LeftStick.Y > 0.5f ||
-	    GameInput->LeftStick.Y < -0.5f)
+	if (GameInput->LeftStick.X > 0.1f || GameInput->LeftStick.X < -0.1f ||
+	    GameInput->LeftStick.Y > 0.1f || GameInput->LeftStick.Y < -0.1f)
 	{
-		Player->FacingDirection = Vector2Normalize(GameInput->LeftStick);
+		vector2 DirectionDifference = Vector2Normalize(GameInput->LeftStick) - Player->FacingDirection;
+		Player->FacingDirection = Player->FacingDirection + (DirectionDifference * 0.2f);
 	}
 
 	vector2 PlayerCamDifference = Player->Entity.Position - GameState->WorldCenter;
@@ -534,52 +593,64 @@ extern "C" GAME_LOOP(GameLoop)
 	     EntityIndex++)
 	{
 		active_entity *EntityAbout = GameState->WorldEntities[EntityIndex];
-		if (EntityAbout->IsColliding)
+		if (EntityAbout->Alive)
 		{
-			vector2 CollideDirection = EntityAbout->CollideDirection;
-			real64 WidthSum = (EntityAbout->Width / 2) + (EntityAbout->CollidingWith->Width / 2) + 0.2f;
-
-			if (CollideDirection.X > 0  &&
-			    (EntityAbout->Position.X > (EntityAbout->CollidingWith->Position.X + WidthSum)) ||
-			    (EntityAbout->Position.Y > (EntityAbout->CollidingWith->Position.Y + WidthSum)) ||
-			    (EntityAbout->Position.Y < (EntityAbout->CollidingWith->Position.Y - WidthSum)))
+			if (EntityAbout->IsColliding)
 			{
-				EntityAbout->CollidingWith->IsColliding = false;
-				EntityAbout->IsColliding = false;
+				vector2 CollideDirection = EntityAbout->CollideDirection;
+				real64 WidthSum = (EntityAbout->ColliderWidth / 2) + (EntityAbout->CollidingWith->ColliderWidth / 2) + 0.2f;
+
+				if (CollideDirection.X > 0  &&
+				    (EntityAbout->Position.X > (EntityAbout->CollidingWith->Position.X + WidthSum)) ||
+				    (EntityAbout->Position.Y > (EntityAbout->CollidingWith->Position.Y + WidthSum)) ||
+				    (EntityAbout->Position.Y < (EntityAbout->CollidingWith->Position.Y - WidthSum)))
+				{
+					EntityAbout->CollidingWith->IsColliding = false;
+					EntityAbout->IsColliding = false;
+				}
+				if (CollideDirection.X < 0  &&
+				    (EntityAbout->Position.X < (EntityAbout->CollidingWith->Position.X - WidthSum)) ||
+				    (EntityAbout->Position.Y > (EntityAbout->CollidingWith->Position.Y + WidthSum)) ||
+				    (EntityAbout->Position.Y < (EntityAbout->CollidingWith->Position.Y - WidthSum)))
+				{
+					EntityAbout->CollidingWith->IsColliding = false;
+					EntityAbout->IsColliding = false;
+				}
+				// NOTE I don't need to check the positive and negative y directions. I'm not quite sure why not.
 			}
-			if (CollideDirection.X < 0  &&
-			    (EntityAbout->Position.X < (EntityAbout->CollidingWith->Position.X - WidthSum)) ||
-			    (EntityAbout->Position.Y > (EntityAbout->CollidingWith->Position.Y + WidthSum)) ||
-			    (EntityAbout->Position.Y < (EntityAbout->CollidingWith->Position.Y - WidthSum)))
+
+			EntityAbout->OnCollide = false;
+
+			if (!EntityAbout->Image)
 			{
-				EntityAbout->CollidingWith->IsColliding = false;
-				EntityAbout->IsColliding = false;
+				vector2 EntityWorldCenter = EntityAbout->Position - WorldCenter;
+				PushRenderSquare(GameState, MakeSquare(EntityWorldCenter, EntityAbout->ImageWidth, EntityAbout->Color));
 			}
-			// NOTE I don't need to check the positive and negative y directions. I'm not quite sure why not.
-		}
-
-		EntityAbout->OnCollide = false;
-
-		if (!EntityAbout->Image)
-		{
-			vector2 EntityWorldCenter = EntityAbout->Position - WorldCenter;
-			gl_square NewSquare = MakeSquare(EntityWorldCenter, EntityAbout->Width, EntityAbout->Color);
-			PushRenderSquare(GameState, NewSquare);
 		}
 	}
 
-	gl_texture Texture = {};
-	Texture.Image = Player->Entity.Image;
-	Texture.Center = Player->Entity.Position - WorldCenter;
-	Texture.Scale = vector2{Player->Entity.Width / 2, Player->Entity.Width / 2};
+	gl_texture RadiusTexture = {};
+	RadiusTexture.Image = &GameState->GrappleRadiusImage;
+	RadiusTexture.Center = Player->Entity.Position - WorldCenter;
+	RadiusTexture.Scale = vector2{100, 100};
+	RadiusTexture.RadiansAngle = 0;
+	PushRenderTexture(GameState, RadiusTexture);
+
+	gl_texture PlayerTexture = {};
+	PlayerTexture.Image = Player->Entity.Image;
+	PlayerTexture.Center = Player->Entity.Position - WorldCenter;
+	PlayerTexture.Scale = vector2{Player->Entity.ImageWidth / 2, Player->Entity.ImageWidth / 2};
 	real64 Angle = acos(DotProduct(Player->FacingDirection, vector2{1, 0}) /
-	                    (VectorLength(Player->FacingDirection) * VectorLength(vector2{1, 0})));
+	                    (Vector2Length(Player->FacingDirection) * Vector2Length(vector2{1, 0})));
 	if (Player->FacingDirection.Y > 0)
 	{
 		Angle = Angle * -1;
 	}
-	Texture.RadiansAngle = Angle;
-	PushRenderTexture(GameState, Texture);
+	PlayerTexture.RadiansAngle = Angle;
+	PushRenderTexture(GameState, PlayerTexture);
+
+	// Visualize the players collision box
+	// PushRenderSquare(GameState, MakeSquare(Player->Entity.Position - WorldCenter, Player->Entity.ColliderWidth, COLOR_RED));
 
 	for (int HealthIndex = 1;
 	     HealthIndex < GameState->Player.CurrHealth + 1;
@@ -587,8 +658,7 @@ extern "C" GAME_LOOP(GameLoop)
 	{
 		uint8 Width = 30;
 		vector2 Center = vector2{HealthIndex * (25 + (Width / 2)), 25 + (Width / 2)};
-		gl_square NewSquare = MakeSquare(Center, Width, COLOR_RED);
-		PushRenderSquare(GameState, NewSquare);
+		PushRenderSquare(GameState, MakeSquare(Center, Width, COLOR_RED));
 	}
 }
 

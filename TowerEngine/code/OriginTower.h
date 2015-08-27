@@ -214,17 +214,20 @@ struct active_entity
 	vector2 Position;
 	vector2 Velocity;
 
-	uint16 Width;
 	real32 MovementSpeed;
 
 	color Color;
 
+	uint16 ColliderWidth;
 	bool32 OnCollide;
 	bool32 IsColliding;
 	active_entity *CollidingWith;
 	vector2 CollideDirection;
 
+	uint16 ImageWidth;
 	loaded_image *Image;
+
+	bool32 Alive;
 };
 
 struct player
@@ -233,6 +236,12 @@ struct player
 
 	vector2 FacingDirection;
 	int8 CurrHealth;
+
+	real32 CurrMovementSpeed;
+	real32 MaxMovementSpeed;
+
+	bool32 IsGrappled;
+	active_entity *GrappledEntity;
 };
 
 struct game_state
@@ -241,8 +250,6 @@ struct game_state
 	active_entity *WorldEntities[50];
 
 	player Player;
-	loaded_image PlayerImage;
-
 	active_entity Enemy;
 
 	uint32 PlayerHealthCount;
@@ -251,7 +258,6 @@ struct game_state
 	loaded_sound TestNote;
 	uint32 TestNoteSampleIndex;
 
-	loaded_image BackgroundImage;
 	int16 BackgroundPositionsCount;
 	vector2 BackgroundPositions[200];
 
@@ -259,6 +265,10 @@ struct game_state
 	gl_texture RenderTextures[300];
 	uint32 RenderSquaresCount;
 	gl_square RenderSquares[50];
+
+	loaded_image BackgroundImage;
+	loaded_image GrappleRadiusImage;
+	loaded_image PlayerImage;
 
 	vector2 WorldCenter;
 	vector2 CamCenter;

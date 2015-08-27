@@ -83,7 +83,7 @@ bool32 operator>(vector2 A, int32 B)
 }
 
 real64
-VectorLength(vector2 A)
+Vector2Length(vector2 A)
 {
 	return (SquareRoot((A.X * A.X) + (A.Y * A.Y)));
 }
@@ -93,7 +93,7 @@ Vector2Normalize(vector2 Input)
 {
 	vector2 Output = {};
 
-	real64 Length = VectorLength(Input);
+	real64 Length = Vector2Length(Input);
 	Output.X = Input.X / Length;
 	Output.Y = Input.Y / Length;
 
