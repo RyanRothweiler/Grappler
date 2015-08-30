@@ -757,7 +757,7 @@ int32 main (int32 argc, char **argv)
 			glBegin(GL_QUADS);
 			{
 				gl_square Square = GameStateFromMemory->RenderSquares[SquareIndex];
-				glColor3f((GLfloat)(Square.Color.R / 255), (GLfloat)(Square.Color.G / 255), (GLfloat)(Square.Color.B / 255));
+				glColor3f((GLfloat)(Square.Color.R / 255.0f), (GLfloat)(Square.Color.G / 255.0f), (GLfloat)(Square.Color.B / 255.0f));
 				// NOTE the order of this can't be changed. Though I can't find any documentation on why or what the correct order is, but this works.
 				glVertex2d(Square.TopRight.X, Square.TopRight.Y);
 				glVertex2d(Square.TopLeft.X, Square.TopLeft.Y);

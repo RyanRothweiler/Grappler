@@ -24,13 +24,22 @@ vector2 operator-(vector2 A, vector2 B)
 	return (Output);
 }
 
-vector2 operator/(vector2 A, int B)
+vector2 operator/(vector2 A, int32 B)
 {
 	vector2 Output;
 	Output.X = A.X / B;
 	Output.Y = A.Y / B;
 	return (Output);
 }
+
+vector2 operator/(vector2 A, real64 B)
+{
+	vector2 Output;
+	Output.X = A.X / B;
+	Output.Y = A.Y / B;
+	return (Output);
+}
+
 
 vector2 operator*(vector2 A, real64 B)
 {
@@ -110,5 +119,12 @@ Vector2Distance(vector2 A, vector2 B)
 	return (Abs(Output));
 }
 
+real64
+Vector2AngleBetween(vector2 A, vector2 B)
+{
+	real64 Result = 0;
+	Result = acos(DotProduct(A, B) / (Vector2Length(A) * Vector2Length(B)));
+	return (Result);
+}
 
 const vector2 VECTOR2_ZERO = vector2{0, 0};

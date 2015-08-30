@@ -3,8 +3,6 @@
 
 static platform_read_file *PlatformReadFile;
 
-vector2 EnemyTargetPosition;
-
 int64
 Lerp(int64 a, int64 b, real32 t)
 {
@@ -34,102 +32,6 @@ RandomRangeInt(int32 Bottom, int32 Top, game_state *GameState)
 {
 	real64 Result = RandomRangeFloat((real32)Bottom, (real32)Top, GameState);
 	return ((int64)Result);
-}
-
-// NOTE right now collision detection only works for squares
-void
-ForceEntity(active_entity *Entity, vector2 InputForce, game_state *GameState)
-{
-	InputForce = (InputForce * Entity->MovementSpeed) + (-0.25f * Entity->Velocity);
-	// NOTE these 0.9f here should actually be the previous elapsed frame time. Maybe do that at some point
-	vector2 NewTestPos = (0.5f * InputForce * SquareInt((int64)(0.9f))) + (Entity->Velocity * 0.9f) + Entity->Position;
-
-	bool32 CollisionDetected = false;
-	active_entity *EntityHit = {};
-
-	for (int EntityIndex = 0;
-	     EntityIndex < GameState->WorldEntityCount;
-	     EntityIndex++)
-	{
-		if (GameState->WorldEntities[EntityIndex] != Entity)
-		{
-			real64 WidthAdding = Entity->ColliderWidth;
-			vector2 EntityTopLeft =
-			{
-				GameState->WorldEntities[EntityIndex]->Position.X - ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2),
-				GameState->WorldEntities[EntityIndex]->Position.Y - ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2)
-			};
-			vector2 EntityBottomRight =
-			{
-				GameState->WorldEntities[EntityIndex]->Position.X + ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2),
-				GameState->WorldEntities[EntityIndex]->Position.Y + ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2)
-			};
-
-			if (NewTestPos.X > EntityTopLeft.X &&
-			    NewTestPos.X < EntityBottomRight.X &&
-			    NewTestPos.Y > EntityTopLeft.Y &&
-			    NewTestPos.Y < EntityBottomRight.Y)
-			{
-				CollisionDetected = true;
-				EntityHit = GameState->WorldEntities[EntityIndex];
-			}
-		}
-	}
-
-	if (!CollisionDetected)
-	{
-		Entity->Position = NewTestPos;
-		Entity->Velocity = (InputForce * 0.9f) + Entity->Velocity;
-	}
-	else
-	{
-		if (!Entity->IsColliding)
-		{
-			Entity->OnCollide = true;
-		}
-		if (!EntityHit->IsColliding)
-		{
-			EntityHit->OnCollide = true;
-		}
-
-		EntityHit->IsColliding = true;
-		EntityHit->CollidingWith = Entity;
-		Entity->IsColliding = true;
-		Entity->CollidingWith = EntityHit;
-
-		real64 WidthSum = (EntityHit->ColliderWidth / 2) + (Entity->ColliderWidth / 2);
-
-		vector2 NewPos = NewTestPos;
-		vector2 NewVelocity = (InputForce * 0.9f) + Entity->Velocity;
-
-		if (Entity->Position.X > (EntityHit->Position.X + WidthSum))
-		{
-			NewVelocity.X = 0;
-			NewPos.X = EntityHit->Position.X + WidthSum + 0.1f;
-			Entity->CollideDirection = vector2{1, 0};
-		}
-		if (Entity->Position.X < (EntityHit->Position.X - WidthSum))
-		{
-			NewVelocity.X = 0;
-			NewPos.X = EntityHit->Position.X - WidthSum - 0.1f;
-			Entity->CollideDirection = vector2{ -1, 0};
-		}
-		if (Entity->Position.Y > (EntityHit->Position.Y + WidthSum))
-		{
-			NewVelocity.Y = 0;
-			NewPos.Y = EntityHit->Position.Y + WidthSum + 0.1f;
-			Entity->CollideDirection = vector2{0, 1};
-		}
-		if (Entity->Position.Y < (EntityHit->Position.Y - WidthSum))
-		{
-			NewVelocity.Y = 0;
-			NewPos.Y = EntityHit->Position.Y - WidthSum - 0.1f;
-			Entity->CollideDirection = vector2{0, -1};
-		}
-
-		Entity->Position = NewPos;
-		Entity->Velocity = NewVelocity;
-	}
 }
 
 // NOTE this debug line only outputs after the end of the GameLoop.
@@ -330,6 +232,7 @@ LoadAssets(game_state *GameState)
 	GameState->BackgroundImage = GLLoadBMP("../assets/Background.bmp");
 	GameState->PlayerImage = GLLoadBMP("../assets/Player.bmp");
 	GameState->GrappleRadiusImage = GLLoadBMP("../assets/LatchRadius.bmp");
+	GameState->GrappleLineImage = GLLoadBMP("../assets/GrappleLine.bmp");
 
 	// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
 	DebugLine("Loaded", GameState);
@@ -364,13 +267,13 @@ PushRenderSquare(game_state *GameState, gl_square Square)
 }
 
 void
-PushRenderTexture(game_state *GameState, gl_texture Texture)
+PushRenderTexture(game_state *GameState, gl_texture *Texture)
 {
 	Assert(_countof(GameState->RenderTextures) > GameState->RenderTexturesCount);
-	GameState->RenderTextures[GameState->RenderTexturesCount].Image = Texture.Image;
-	GameState->RenderTextures[GameState->RenderTexturesCount].Center = Texture.Center;
-	GameState->RenderTextures[GameState->RenderTexturesCount].Scale = Texture.Scale;
-	GameState->RenderTextures[GameState->RenderTexturesCount].RadiansAngle = Texture.RadiansAngle;
+	GameState->RenderTextures[GameState->RenderTexturesCount].Image = Texture->Image;
+	GameState->RenderTextures[GameState->RenderTexturesCount].Center = Texture->Center;
+	GameState->RenderTextures[GameState->RenderTexturesCount].Scale = Texture->Scale;
+	GameState->RenderTextures[GameState->RenderTexturesCount].RadiansAngle = Texture->RadiansAngle;
 	GameState->RenderTexturesCount++;
 }
 
@@ -379,6 +282,16 @@ AddWorldEntity(game_state *GameState, active_entity *Entity)
 {
 	GameState->WorldEntities[GameState->WorldEntityCount] = Entity;
 	GameState->WorldEntityCount++;
+}
+
+enemy *
+GetNewEnemy(game_state *GameState)
+{
+	Assert(_countof(GameState->Enemies) > GameState->EnemyCount);
+	AddWorldEntity(GameState, &GameState->Enemies[GameState->EnemyCount].Entity);
+	enemy *Result = &GameState->Enemies[GameState->EnemyCount];
+	GameState->EnemyCount++;
+	return (Result);
 }
 
 void
@@ -397,6 +310,13 @@ KillEntity(active_entity *Entity)
 	Entity->Position = vector2{90000, 90000};
 }
 
+void
+EnemyGetRandomTarget(enemy *Enemy, game_state *GameState)
+{
+	Enemy->TargetPos.X = Enemy->TargetCenter.X + RandomRangeInt(-200, 200, GameState);
+	Enemy->TargetPos.Y = Enemy->TargetCenter.X + RandomRangeInt(-200, 200, GameState);
+}
+
 extern "C" GAME_LOOP(GameLoop)
 {
 	PlatformReadFile = Memory->PlatformReadFile;
@@ -409,7 +329,10 @@ extern "C" GAME_LOOP(GameLoop)
 
 		LoadAssets(GameState);
 
-		// NOTE maybe this method overwrites memory??
+		GameState->WorldEntityCount = 0;
+		GameState->PlayerHealthCount = 0;
+		GameState->EnemyCount = 0;
+
 		uint16 PosCount = 0;
 		uint16 XCount = 10;
 		uint16 YCount = 10;
@@ -428,38 +351,55 @@ extern "C" GAME_LOOP(GameLoop)
 			}
 		}
 
-		GameState->WorldEntityCount = 0;
-		GameState->PlayerHealthCount = 0;
 
 		GameState->Player.Entity.Position.X = WindowInfo->Width / 2;
 		GameState->Player.Entity.Position.Y = WindowInfo->Height / 2;
 		GameState->Player.Entity.ColliderWidth = 20;
 		GameState->Player.Entity.ImageWidth = 40;
-		GameState->Player.Entity.MovementSpeed = 2;
+		GameState->Player.Entity.MovementSpeed = 10;
 		GameState->Player.CurrMovementSpeed = GameState->Player.Entity.MovementSpeed;
 		GameState->Player.MaxMovementSpeed = GameState->Player.Entity.MovementSpeed;
+		GameState->Player.Entity.Weight = 3;
+		GameState->Player.Entity.Dynamic = true;
 		GameState->Player.Entity.Color = COLOR_BLUE;
 		GameState->Player.Entity.Alive = true;
 		GameState->Player.Entity.Image = &GameState->PlayerImage;
 		GameState->Player.CurrHealth = 3;
 		AddWorldEntity(GameState, &GameState->Player.Entity);
 
-		GameState->Enemy.Position.X = 700.0f;
-		GameState->Enemy.Position.Y = 700.0f;
-		GameState->Enemy.ImageWidth = 20;
-		GameState->Enemy.ColliderWidth = GameState->Enemy.ImageWidth;
-		GameState->Enemy.MovementSpeed = 1;
-		GameState->Enemy.Color = COLOR_GREEN;
-		GameState->Enemy.Alive = true;
-		AddWorldEntity(GameState, &GameState->Enemy);
+
+		enemy *Enemy = {};
+
+		Enemy = GetNewEnemy(GameState);
+		Enemy->Entity.Position.X = 700.0f;
+		Enemy->Entity.Position.Y = 700.0f;
+		Enemy->TargetCenter = Enemy->Entity.Position;
+		Enemy->Entity.ImageWidth = 25;
+		Enemy->Entity.ColliderWidth = Enemy->Entity.ImageWidth;
+		Enemy->Entity.MovementSpeed = 1;
+		Enemy->Entity.Dynamic = true;
+		Enemy->Entity.Color = COLOR_GREEN;
+		Enemy->Entity.Alive = true;
+		Enemy->Entity.Weight = 0.5f;
+		EnemyGetRandomTarget(Enemy, GameState);
+
+		Enemy = GetNewEnemy(GameState);
+		Enemy->Entity.Position.X = 300.0f;
+		Enemy->Entity.Position.Y = 300.0f;
+		Enemy->TargetCenter = Enemy->Entity.Position;
+		Enemy->Entity.ImageWidth = 50;
+		Enemy->Entity.ColliderWidth = Enemy->Entity.ImageWidth;
+		Enemy->Entity.MovementSpeed = 5;
+		Enemy->Entity.Dynamic = true;
+		Enemy->Entity.Color = color{255, 75, 0, 255};
+		Enemy->Entity.Alive = true;
+		Enemy->Entity.Weight = 7;
+		EnemyGetRandomTarget(Enemy, GameState);
 
 		GameState->WorldCenter = vector2{0, 0};
 		GameState->CamCenter = vector2{WindowInfo->Width / 2, WindowInfo->Height / 2};
 
 		AudioBuffer->RunningSampleIndex = 0;
-
-		EnemyTargetPosition.X = GameState->Enemy.Position.X + RandomRangeInt(-200, 200, GameState);
-		EnemyTargetPosition.Y = GameState->Enemy.Position.Y + RandomRangeInt(-200, 200, GameState);
 
 		Memory->IsInitialized = true;
 		// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
@@ -467,7 +407,6 @@ extern "C" GAME_LOOP(GameLoop)
 	}
 
 	player *Player = &GameState->Player;
-	active_entity *Enemy = &GameState->Enemy;
 
 	GameState->RenderSquaresCount = 0;
 	GameState->RenderTexturesCount = 0;
@@ -501,26 +440,28 @@ extern "C" GAME_LOOP(GameLoop)
 	}
 	GameState->TestNoteSampleIndex += AudioBuffer->SampleCount;
 
-	if (Enemy->Alive)
+	for (int8 index = 0;
+	     index < GameState->EnemyCount;
+	     index++)
 	{
-		real64 Distance = Vector2Distance(Enemy->Position, EnemyTargetPosition);
-		if (Distance < 5.0f)
+		enemy *Enemy = &GameState->Enemies[index];
+		if (Enemy->Entity.Alive)
 		{
-			EnemyTargetPosition.X = (real64)RandomRangeInt(-200, 200, GameState);
-			EnemyTargetPosition.Y = (real64)RandomRangeInt(-200, 200, GameState);
+			real64 Distance = Vector2Distance(Enemy->Entity.Position, Enemy->TargetPos);
+			if (Distance < 10.0f)
+			{
+				EnemyGetRandomTarget(Enemy, GameState);
+			}
+			vector2 DirectionPos = {};
+			DirectionPos = Enemy->Entity.Position - Enemy->TargetPos;
+			DirectionPos = -1 * Vector2Normalize(DirectionPos);
+			Enemy->Entity.ForceOn = Enemy->Entity.ForceOn + (DirectionPos * Enemy->Entity.MovementSpeed);
 		}
-		vector2 DirectionPos = {};
-		DirectionPos = Enemy->Position - EnemyTargetPosition;
-		DirectionPos = -1 * Vector2Normalize(DirectionPos);
-		ForceEntity(Enemy, DirectionPos, GameState);
 	}
 
 	if (GameInput->R1.IsDown)
 	{
 		Player->CurrMovementSpeed = Player->MaxMovementSpeed * 0.2f;
-
-		Player->IsGrappled = false;
-
 		bool32 FoundEntity = false;
 		for (int EntityIndex = 0;
 		     EntityIndex < GameState->WorldEntityCount;
@@ -543,17 +484,27 @@ extern "C" GAME_LOOP(GameLoop)
 	}
 	else
 	{
+		Player->IsGrappled = false;
 		Player->CurrMovementSpeed = Player->MaxMovementSpeed;
 	}
 
 	if (Player->IsGrappled)
 	{
-		
+		Player->CurrMovementSpeed = Player->MaxMovementSpeed * 0.2f;
+
+		real64 SpringConstant = 0.1f;
+		real64 SpringRestLength = 100.0f;
+
+		vector2 SpringVector = Player->GrappledEntity->Position - Player->Entity.Position;
+		real64 SpringVectorLength = Vector2Length(SpringVector);
+		vector2 SpringForce = (Vector2Normalize(SpringVector) * -1.0 * SpringConstant) * (SpringVectorLength - SpringRestLength) * 0.5f;
+
+		Player->Entity.ForceOn = Player->Entity.ForceOn + (SpringForce * -1.0f);
+		Player->GrappledEntity->ForceOn = Player->GrappledEntity->ForceOn + SpringForce;
 	}
 
 	Player->Entity.MovementSpeed = Player->CurrMovementSpeed;
-	vector2 PrevPlayerPos = Player->Entity.Position;
-	ForceEntity(&Player->Entity, Vector2Normalize(GameInput->LeftStick), GameState);
+	Player->Entity.ForceOn = Player->Entity.ForceOn + Vector2Normalize(GameInput->LeftStick) * Player->Entity.MovementSpeed;
 	if (GameInput->LeftStick.X > 0.1f || GameInput->LeftStick.X < -0.1f ||
 	    GameInput->LeftStick.Y > 0.1f || GameInput->LeftStick.Y < -0.1f)
 	{
@@ -563,17 +514,6 @@ extern "C" GAME_LOOP(GameLoop)
 
 	vector2 PlayerCamDifference = Player->Entity.Position - GameState->WorldCenter;
 	GameState->WorldCenter = GameState->WorldCenter + (PlayerCamDifference * 0.08f);
-
-	if (Player->Entity.OnCollide)
-	{
-		DebugLine("Losing Health", GameState);
-		Player->CurrHealth--;
-		if (Player->CurrHealth == 0)
-		{
-			DebugLine("DEAD", GameState);
-		}
-	}
-
 	vector2 WorldCenter = GameState->WorldCenter - GameState->CamCenter;
 
 	for (uint32 PosCount = 0;
@@ -585,7 +525,36 @@ extern "C" GAME_LOOP(GameLoop)
 		Texture.Image = &GameState->BackgroundImage;
 		Texture.Center = GameState->BackgroundPositions[PosCount] - WorldCenter;
 		Texture.Scale = vector2{1000, 1000};
-		PushRenderTexture(GameState, Texture);
+		PushRenderTexture(GameState, &Texture);
+	}
+
+	if (Player->IsGrappled)
+	{
+		gl_texture Texture = {};
+		Texture.Image = &GameState->GrappleLineImage;
+		Texture.Center = ((Player->Entity.Position + Player->GrappledEntity->Position) / 2) - WorldCenter;
+
+		real64 GrappleImageScale = Vector2Distance(Player->Entity.Position, Player->GrappledEntity->Position) * 0.7f;
+		Texture.Scale = vector2{GrappleImageScale, 100};
+
+		vector2 PlayerEnemyDirection = Vector2Normalize(Player->Entity.Position - Player->GrappledEntity->Position);
+		real64 Angle = Vector2AngleBetween(PlayerEnemyDirection, vector2{1, 0});
+		if (PlayerEnemyDirection.Y > 0)
+		{
+			Angle = Angle * -1;
+		}
+		Texture.RadiansAngle = Angle;
+		PushRenderTexture(GameState, &Texture);
+	}
+
+	if (Player->Entity.OnCollide)
+	{
+		DebugLine("Losing Health", GameState);
+		Player->CurrHealth--;
+		if (Player->CurrHealth == 0)
+		{
+			DebugLine("DEAD", GameState);
+		}
 	}
 
 	for (int EntityIndex = 0;
@@ -629,29 +598,133 @@ extern "C" GAME_LOOP(GameLoop)
 		}
 	}
 
+	for (int EntityIndex = 0;
+	     EntityIndex < GameState->WorldEntityCount;
+	     EntityIndex++)
+	{
+		active_entity *EntityAbout = GameState->WorldEntities[EntityIndex];
+		if (EntityAbout->Alive)
+		{
+			vector2 Acceleration = (EntityAbout->ForceOn / EntityAbout->Weight) + (-0.25f * EntityAbout->Velocity);
+			// NOTE these 0.9f here should actually be the previous elapsed frame time. Maybe do that at some point
+			vector2 NewTestPos = (0.5f * Acceleration * SquareInt((int64)(0.9f))) + (EntityAbout->Velocity * 0.9f) + EntityAbout->Position;
+
+			bool32 CollisionDetected = false;
+			active_entity *EntityHit = {};
+
+			for (int EntityIndex = 0;
+			     EntityIndex < GameState->WorldEntityCount;
+			     EntityIndex++)
+			{
+				if (GameState->WorldEntities[EntityIndex] != EntityAbout)
+				{
+					real64 WidthAdding = EntityAbout->ColliderWidth;
+					vector2 EntityTopLeft =
+					{
+						GameState->WorldEntities[EntityIndex]->Position.X - ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2),
+						GameState->WorldEntities[EntityIndex]->Position.Y - ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2)
+					};
+					vector2 EntityBottomRight =
+					{
+						GameState->WorldEntities[EntityIndex]->Position.X + ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2),
+						GameState->WorldEntities[EntityIndex]->Position.Y + ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2)
+					};
+
+					if (NewTestPos.X > EntityTopLeft.X &&
+					    NewTestPos.X < EntityBottomRight.X &&
+					    NewTestPos.Y > EntityTopLeft.Y &&
+					    NewTestPos.Y < EntityBottomRight.Y)
+					{
+						CollisionDetected = true;
+						EntityHit = GameState->WorldEntities[EntityIndex];
+					}
+				}
+			}
+
+			if (!CollisionDetected)
+			{
+				EntityAbout->Position = NewTestPos;
+				EntityAbout->Velocity = (Acceleration * 0.9f) + EntityAbout->Velocity;
+			}
+			else
+			{
+				if (!EntityAbout->IsColliding)
+				{
+					EntityAbout->OnCollide = true;
+				}
+				if (!EntityHit->IsColliding)
+				{
+					EntityHit->OnCollide = true;
+				}
+
+				EntityHit->IsColliding = true;
+				EntityHit->CollidingWith = EntityAbout;
+				EntityAbout->IsColliding = true;
+				EntityAbout->CollidingWith = EntityHit;
+
+				EntityHit->ForceOn = EntityHit->ForceOn + EntityAbout->ForceOn;
+
+				real64 WidthSum = (EntityHit->ColliderWidth / 2) + (EntityAbout->ColliderWidth / 2);
+
+				vector2 NewPos = NewTestPos;
+				vector2 NewVelocity = (Acceleration * 0.9f) + EntityAbout->Velocity;
+
+				if (EntityAbout->Position.X > (EntityHit->Position.X + WidthSum))
+				{
+					NewVelocity.X = 0;
+					NewPos.X = EntityHit->Position.X + WidthSum + 0.1f;
+					EntityAbout->CollideDirection = vector2{1, 0};
+				}
+				if (EntityAbout->Position.X < (EntityHit->Position.X - WidthSum))
+				{
+					NewVelocity.X = 0;
+					NewPos.X = EntityHit->Position.X - WidthSum - 0.1f;
+					EntityAbout->CollideDirection = vector2{ -1, 0};
+				}
+				if (EntityAbout->Position.Y > (EntityHit->Position.Y + WidthSum))
+				{
+					NewVelocity.Y = 0;
+					NewPos.Y = EntityHit->Position.Y + WidthSum + 0.1f;
+					EntityAbout->CollideDirection = vector2{0, 1};
+				}
+				if (EntityAbout->Position.Y < (EntityHit->Position.Y - WidthSum))
+				{
+					NewVelocity.Y = 0;
+					NewPos.Y = EntityHit->Position.Y - WidthSum - 0.1f;
+					EntityAbout->CollideDirection = vector2{0, -1};
+				}
+
+				EntityAbout->Position = NewPos;
+				EntityAbout->Velocity = NewVelocity;
+			}
+
+			EntityAbout->ForceOn = VECTOR2_ZERO;
+		}
+	}
+
 	gl_texture RadiusTexture = {};
 	RadiusTexture.Image = &GameState->GrappleRadiusImage;
 	RadiusTexture.Center = Player->Entity.Position - WorldCenter;
 	RadiusTexture.Scale = vector2{100, 100};
 	RadiusTexture.RadiansAngle = 0;
-	PushRenderTexture(GameState, RadiusTexture);
+	PushRenderTexture(GameState, &RadiusTexture);
 
 	gl_texture PlayerTexture = {};
 	PlayerTexture.Image = Player->Entity.Image;
 	PlayerTexture.Center = Player->Entity.Position - WorldCenter;
 	PlayerTexture.Scale = vector2{Player->Entity.ImageWidth / 2, Player->Entity.ImageWidth / 2};
-	real64 Angle = acos(DotProduct(Player->FacingDirection, vector2{1, 0}) /
-	                    (Vector2Length(Player->FacingDirection) * Vector2Length(vector2{1, 0})));
+	real64 Angle = Vector2AngleBetween(Player->FacingDirection, vector2{1, 0});
 	if (Player->FacingDirection.Y > 0)
 	{
 		Angle = Angle * -1;
 	}
 	PlayerTexture.RadiansAngle = Angle;
-	PushRenderTexture(GameState, PlayerTexture);
+	PushRenderTexture(GameState, &PlayerTexture);
 
 	// Visualize the players collision box
 	// PushRenderSquare(GameState, MakeSquare(Player->Entity.Position - WorldCenter, Player->Entity.ColliderWidth, COLOR_RED));
 
+	GameState->Player.CurrHealth = ClampValue(0, 1000, GameState->Player.CurrHealth);
 	for (int HealthIndex = 1;
 	     HealthIndex < GameState->Player.CurrHealth + 1;
 	     HealthIndex++)

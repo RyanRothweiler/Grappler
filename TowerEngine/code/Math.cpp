@@ -37,6 +37,20 @@ ClampValue(real64 Bottom, real64 Top, vector2 Value)
 	return (Output);
 }
 
+int64
+ClampValue(int64 Bottom, int64 Top, int64 Value)
+{
+	if (Value <= Bottom)
+	{
+		return (Bottom);
+	}
+	if (Value >= Top)
+	{
+		return (Top);
+	}
+	return (Value);
+}
+
 real64
 SquareRoot(real64 num)
 {
@@ -92,7 +106,7 @@ ArcCos(real64 Input)
 	return (acos(Input));
 }
 
-real64 
+real64
 Sin(real64 Input)
 {
 	return (sin(Input));

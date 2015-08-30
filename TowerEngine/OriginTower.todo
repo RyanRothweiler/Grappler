@@ -1,12 +1,9 @@
 Working on:
-   ☐ show grapple iamge
-   ☐ grapple onto an the test enemy
    ☐ give enemies health
    ☐ visualize enemies health with a bar on screen
    ☐ destory enemies when they die
    ☐ generate four walls
    ☐ flash the screen red when hit an enemy
-   ☐ test things with two enemies
 
 
 General:
@@ -15,16 +12,22 @@ General:
    ☐ Combine the RenderSquares and RenderImges list. So those can be drawn and layered together
    ☐ switch player health over to images
    ☐ create an animated sprite
+   ☐ animate the latching sprite
+   ☐ grapple the nearest enemy
+
 
 Gameplay:
  
+
 Later:
    ☐ look at using intrinsics for some of the math functions
    ☐ extend audio to support stereo
    ☐ handle resizing the window
    ☐ Change color to use floats (0.0 - 1.0) instead of (0 - 255)
-   ☐ when pushing a square or texture, I'm creating a lot of temporary data. Maybe keep that data around but edit it when pushing
    ☐ create a way to visualize all the collider boxes for every entity
+   ☐ threading.... what.
+   ☐ use threading to stream assets
+
 
 UI:
    ☐ ui button with normal / selected / down states
@@ -32,6 +35,7 @@ UI:
    ☐ rendering text on screen from font file
    ☐ show fps in game
    ☐ show warnings on screen in game. such as warning when file not found
+
 
 Bugs:
    ☐ player rotation seems to snap to a few values. moving the player in a circle isn't smooth
@@ -46,6 +50,10 @@ Bugs:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+ ✔ test things with two enemies @done (15-08-30 15:47) @project(Working on)
+ ✔ grapple onto an the test enemy @done (15-08-30 15:16) @project(Working on)
+ ✔ when pushing a square or texture, I'm creating a lot of temporary data. Maybe keep that data around but edit it when pushing @done (15-08-30 14:24) @project(Later)
+ ✔ show grapple iamge @done (15-08-27 15:13) @project(Working on)
  ✔ show the player when r1 is being held but still allow latching. @done (15-08-26 20:46) @project(Working on)
  ✔ create a visible latching radius @done (15-08-26 20:19) @project(Working on)
  ✔ smooth out the facing forward rotation of the player  @done (15-08-24 21:10) @project(Working on)

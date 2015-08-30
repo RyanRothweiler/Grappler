@@ -203,7 +203,7 @@ struct gl_square
 struct gl_texture
 {
 	loaded_image *Image;
-	
+
 	vector2 Center;
 	vector2 Scale;
 	real64 RadiansAngle;
@@ -211,9 +211,11 @@ struct gl_texture
 
 struct active_entity
 {
+	vector2 ForceOn;
 	vector2 Position;
 	vector2 Velocity;
 
+	real32 Weight;
 	real32 MovementSpeed;
 
 	color Color;
@@ -224,10 +226,22 @@ struct active_entity
 	active_entity *CollidingWith;
 	vector2 CollideDirection;
 
+	bool32 Dynamic;
+
 	uint16 ImageWidth;
 	loaded_image *Image;
 
 	bool32 Alive;
+};
+
+struct enemy
+{
+	vector2 TargetCenter;
+	vector2 TargetPos;
+	active_entity Entity;
+
+	real32 MaxHealth;
+	real32 CurrHealth;
 };
 
 struct player
@@ -235,7 +249,7 @@ struct player
 	active_entity Entity;
 
 	vector2 FacingDirection;
-	int8 CurrHealth;
+	int64 CurrHealth;
 
 	real32 CurrMovementSpeed;
 	real32 MaxMovementSpeed;
@@ -246,11 +260,13 @@ struct player
 
 struct game_state
 {
+	int32 EnemyCount;
+	enemy Enemies[50];
+
 	int32 WorldEntityCount;
 	active_entity *WorldEntities[50];
 
 	player Player;
-	active_entity Enemy;
 
 	uint32 PlayerHealthCount;
 	gl_square *PlayerHealthSquares[50];
@@ -268,6 +284,7 @@ struct game_state
 
 	loaded_image BackgroundImage;
 	loaded_image GrappleRadiusImage;
+	loaded_image GrappleLineImage;
 	loaded_image PlayerImage;
 
 	vector2 WorldCenter;
