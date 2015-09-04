@@ -226,13 +226,16 @@ LoadAssets(game_state *GameState)
 	// NOTE currently sound is forced at...
 	// Mono, 16 bit, 48000.
 	// anything else won't work. need to implement stereo sound at some point.
-	GameState->TestNoteSampleIndex = 0;
 	GameState->TestNote = LoadWave("../assets/testNote.wav");
+	GameState->TestNoteSampleIndex = 0;
 
 	GameState->BackgroundImage = GLLoadBMP("../assets/Background.bmp");
 	GameState->PlayerImage = GLLoadBMP("../assets/Player.bmp");
 	GameState->GrappleRadiusImage = GLLoadBMP("../assets/LatchRadius.bmp");
 	GameState->GrappleLineImage = GLLoadBMP("../assets/GrappleLine.bmp");
+	GameState->GrappleArrowImage = GLLoadBMP("../assets/GrappleArrow.bmp");
+	GameState->EnemyImage = GLLoadBMP("../assets/Enemy.bmp");
+	GameState->EnemyHealthBar = GLLoadBMP("../assets/HealthBarBackground.bmp");
 
 	// NOTE this line is necessary to initialize the DebugOuput var of GameState. It must be initialized to something.
 	DebugLine("Loaded", GameState);
@@ -278,6 +281,17 @@ PushRenderTexture(game_state *GameState, gl_texture *Texture)
 }
 
 void
+PushRenderLine(game_state *GameState, gl_line *Line)
+{
+	Assert(_countof(GameState->RenderLines) > GameState->RenderLinesCount);
+	GameState->RenderLines[GameState->RenderLinesCount].Start = Line->Start;
+	GameState->RenderLines[GameState->RenderLinesCount].End = Line->End;
+	GameState->RenderLines[GameState->RenderLinesCount].Color = Line->Color;
+	GameState->RenderLines[GameState->RenderLinesCount].Width = Line->Width;
+	GameState->RenderLinesCount++;
+}
+
+void
 AddWorldEntity(game_state *GameState, active_entity *Entity)
 {
 	GameState->WorldEntities[GameState->WorldEntityCount] = Entity;
@@ -317,6 +331,63 @@ EnemyGetRandomTarget(enemy *Enemy, game_state *GameState)
 	Enemy->TargetPos.Y = Enemy->TargetCenter.X + RandomRangeInt(-200, 200, GameState);
 }
 
+void
+TimePause(game_state *GameState)
+{
+	GameState->TimeRate = 0.0f;
+}
+
+bool32
+ClipLine(uint8 Dimension, vector2 Start, vector2 End, gl_square *Square, real64 *FLow, real64 *FHigh)
+{
+
+	real64 Low = (Vector2GetDimension(Dimension, Square->TopLeft) - Vector2GetDimension(Dimension, Start)) /
+	             (Vector2GetDimension(Dimension, End) - Vector2GetDimension(Dimension, Start));
+	real64 High = (Vector2GetDimension(Dimension, Square->BottomRight) - Vector2GetDimension(Dimension, Start)) /
+	              (Vector2GetDimension(Dimension, End) - Vector2GetDimension(Dimension, Start));
+
+	if (High < Low)
+	{
+		real64 Temp = Low;
+		Low = High;
+		High = Temp;
+	}
+
+	if (High < *FLow)
+	{
+		return (false);
+	}
+
+	if (Low > *FHigh)
+	{
+		return (false);
+	}
+
+	*FLow = Max(Low, *FLow);
+	*FHigh = Min(High, *FHigh);
+
+	if (*FLow > *FHigh)
+	{
+		return (false);
+	}
+
+	return (true);
+
+}
+
+real64
+FacingDirectionToRotationAngle(vector2 FacingDirection)
+{
+	real64 Angle = Vector2AngleBetween(FacingDirection, vector2{1, 0});
+	if (FacingDirection.Y > 0)
+	{
+		Angle = Angle * -1;
+	}
+	return (Angle);
+}
+
+
+
 extern "C" GAME_LOOP(GameLoop)
 {
 	PlatformReadFile = Memory->PlatformReadFile;
@@ -325,13 +396,15 @@ extern "C" GAME_LOOP(GameLoop)
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
 	if (!Memory->IsInitialized)
 	{
-		GameState->PrintFPS = false;
+		GameState->PrintFPS = true;
 
 		LoadAssets(GameState);
 
 		GameState->WorldEntityCount = 0;
 		GameState->PlayerHealthCount = 0;
 		GameState->EnemyCount = 0;
+
+		GameState->TimeRate = 1.0f;
 
 		uint16 PosCount = 0;
 		uint16 XCount = 10;
@@ -356,15 +429,17 @@ extern "C" GAME_LOOP(GameLoop)
 		GameState->Player.Entity.Position.Y = WindowInfo->Height / 2;
 		GameState->Player.Entity.ColliderWidth = 20;
 		GameState->Player.Entity.ImageWidth = 40;
-		GameState->Player.Entity.MovementSpeed = 10;
+		GameState->Player.Entity.MovementSpeed = 3;
 		GameState->Player.CurrMovementSpeed = GameState->Player.Entity.MovementSpeed;
 		GameState->Player.MaxMovementSpeed = GameState->Player.Entity.MovementSpeed;
-		GameState->Player.Entity.Weight = 3;
-		GameState->Player.Entity.Dynamic = true;
+		GameState->Player.Entity.Weight = 0.8f;
 		GameState->Player.Entity.Color = COLOR_BLUE;
 		GameState->Player.Entity.Alive = true;
 		GameState->Player.Entity.Image = &GameState->PlayerImage;
 		GameState->Player.CurrHealth = 3;
+		GameState->Player.RedHitFlash = color{1.0f, 0.0f, 0.0f, 0.0f};
+		GameState->Player.CanGrapple = true;
+		GameState->Player.IsGrappled = false;
 		AddWorldEntity(GameState, &GameState->Player.Entity);
 
 
@@ -377,10 +452,12 @@ extern "C" GAME_LOOP(GameLoop)
 		Enemy->Entity.ImageWidth = 25;
 		Enemy->Entity.ColliderWidth = Enemy->Entity.ImageWidth;
 		Enemy->Entity.MovementSpeed = 1;
-		Enemy->Entity.Dynamic = true;
 		Enemy->Entity.Color = COLOR_GREEN;
 		Enemy->Entity.Alive = true;
 		Enemy->Entity.Weight = 0.5f;
+		Enemy->Entity.Image = &GameState->EnemyImage;
+		Enemy->MaxHealth = 150;
+		Enemy->CurrHealth = Enemy->MaxHealth;
 		EnemyGetRandomTarget(Enemy, GameState);
 
 		Enemy = GetNewEnemy(GameState);
@@ -390,10 +467,12 @@ extern "C" GAME_LOOP(GameLoop)
 		Enemy->Entity.ImageWidth = 50;
 		Enemy->Entity.ColliderWidth = Enemy->Entity.ImageWidth;
 		Enemy->Entity.MovementSpeed = 5;
-		Enemy->Entity.Dynamic = true;
-		Enemy->Entity.Color = color{255, 75, 0, 255};
+		Enemy->Entity.Color = color{1.0f, 0.2f, 0, 1.0f};
 		Enemy->Entity.Alive = true;
 		Enemy->Entity.Weight = 7;
+		Enemy->Entity.Image = &GameState->EnemyImage;
+		Enemy->MaxHealth = 150;
+		Enemy->CurrHealth = Enemy->MaxHealth;
 		EnemyGetRandomTarget(Enemy, GameState);
 
 		GameState->WorldCenter = vector2{0, 0};
@@ -410,16 +489,20 @@ extern "C" GAME_LOOP(GameLoop)
 
 	GameState->RenderSquaresCount = 0;
 	GameState->RenderTexturesCount = 0;
+	GameState->RenderLinesCount = 0;
 
 	if (GameInput->BButton.OnDown)
 	{
 		GameState->TestNoteSampleIndex = 0;
 	}
 
-	if (GameInput->YButton.OnDown)
+	if (GameInput->YButton.IsDown)
 	{
-		real64 RandomNum = RandomRangeFloat(0.0f, 5.0f, GameState);
-		real64 Derp = 0.0f;
+		GameState->TimeRate = 0.2f;
+	}
+	else
+	{
+		GameState->TimeRate = 1.0f;
 	}
 
 	// NOTE Sound doesn't work well at all when fps drops below 60
@@ -445,6 +528,12 @@ extern "C" GAME_LOOP(GameLoop)
 	     index++)
 	{
 		enemy *Enemy = &GameState->Enemies[index];
+
+		if (Enemy->CurrHealth < 0)
+		{
+			KillEntity(&Enemy->Entity);
+		}
+
 		if (Enemy->Entity.Alive)
 		{
 			real64 Distance = Vector2Distance(Enemy->Entity.Position, Enemy->TargetPos);
@@ -455,65 +544,113 @@ extern "C" GAME_LOOP(GameLoop)
 			vector2 DirectionPos = {};
 			DirectionPos = Enemy->Entity.Position - Enemy->TargetPos;
 			DirectionPos = -1 * Vector2Normalize(DirectionPos);
+
+			vector2 DirectionDifference = DirectionPos - Enemy->Entity.FacingDirection;
+			Enemy->Entity.FacingDirection = Enemy->Entity.FacingDirection + (DirectionDifference * 0.2f);
+
 			Enemy->Entity.ForceOn = Enemy->Entity.ForceOn + (DirectionPos * Enemy->Entity.MovementSpeed);
 		}
 	}
 
-	if (GameInput->R1.IsDown)
+	if (GameInput->R1.OnDown && Player->IsGrappled)
 	{
-		Player->CurrMovementSpeed = Player->MaxMovementSpeed * 0.2f;
-		bool32 FoundEntity = false;
-		for (int EntityIndex = 0;
-		     EntityIndex < GameState->WorldEntityCount;
-		     EntityIndex++)
-		{
-			if (!FoundEntity)
-			{
-				active_entity *EntityAbout = GameState->WorldEntities[EntityIndex];
-				if (EntityAbout->Alive && EntityAbout != &Player->Entity)
-				{
-					if (Vector2Distance(EntityAbout->Position, Player->Entity.Position) < 90)
-					{
-						FoundEntity = true;
-						Player->IsGrappled = true;
-						Player->GrappledEntity = EntityAbout;
-					}
-				}
-			}
-		}
+		Player->IsGrappled = false;
+		Player->CanGrapple = false;
+	}
+	if (GameInput->R1.OnUp)
+	{
+		Player->CanGrapple = true;
+	}
+
+	if (GameInput->R1.IsDown && Player->CanGrapple)
+	{
+		GameState->TimeRate = 0.15f;
 	}
 	else
 	{
-		Player->IsGrappled = false;
-		Player->CurrMovementSpeed = Player->MaxMovementSpeed;
+		GameState->TimeRate = 1.0f;
+	}
+
+	if (GameInput->R1.OnUp && !Player->IsGrappled && Player->CanGrapple)
+	{
+		vector2 Start = GameState->Player.Entity.Position;
+		vector2 End = GameState->Player.Entity.Position + (GameState->Player.Entity.FacingDirection * 1000.0);
+
+		for (int EntityIndex = 0;
+		     EntityIndex < GameState->EnemyCount;
+		     EntityIndex++)
+		{
+			enemy *EnemyAbout = &GameState->Enemies[EntityIndex];
+			active_entity *EntityAbout = &EnemyAbout->Entity;
+			if (EntityAbout->Alive && EntityAbout != &GameState->Player.Entity)
+			{
+
+				bool32 Hit = true;
+
+				gl_square Square = MakeSquare(EntityAbout->Position, EntityAbout->ColliderWidth, COLOR_RED);
+
+				real64 FLow = 0.0f;
+				real64 FHigh = 1.0f;
+
+				if (!ClipLine(0, Start, End, &Square, &FLow, &FHigh))
+				{
+					Hit = false;
+				}
+				if (!ClipLine(1, Start, End, &Square, &FLow, &FHigh))
+				{
+					Hit = false;
+				}
+
+				if (Hit)
+				{
+					Player->IsGrappled = true;
+					Player->GrappledEnemy = EnemyAbout;
+
+					vector2 Ray = End - Start;
+					vector2 IntersectPoint = Start + (Ray * FLow);
+					Player->RelativeGrapplePoint = EntityAbout->Position - IntersectPoint;
+				}
+
+			}
+		}
 	}
 
 	if (Player->IsGrappled)
 	{
-		Player->CurrMovementSpeed = Player->MaxMovementSpeed * 0.2f;
-
 		real64 SpringConstant = 0.1f;
 		real64 SpringRestLength = 100.0f;
 
-		vector2 SpringVector = Player->GrappledEntity->Position - Player->Entity.Position;
+		vector2 SpringVector = Player->GrappledEnemy->Entity.Position - Player->Entity.Position;
 		real64 SpringVectorLength = Vector2Length(SpringVector);
 		vector2 SpringForce = (Vector2Normalize(SpringVector) * -1.0 * SpringConstant) * (SpringVectorLength - SpringRestLength) * 0.5f;
 
 		Player->Entity.ForceOn = Player->Entity.ForceOn + (SpringForce * -1.0f);
-		Player->GrappledEntity->ForceOn = Player->GrappledEntity->ForceOn + SpringForce;
+		Player->GrappledEnemy->Entity.ForceOn = Player->GrappledEnemy->Entity.ForceOn + SpringForce;
 	}
 
 	Player->Entity.MovementSpeed = Player->CurrMovementSpeed;
-	Player->Entity.ForceOn = Player->Entity.ForceOn + Vector2Normalize(GameInput->LeftStick) * Player->Entity.MovementSpeed;
+	if (GameInput->R1.IsDown && Player->CanGrapple)
+	{
+		Player->Entity.ForceOn = Player->Entity.ForceOn + Player->ForceWhenSlow;;
+	}
+	else
+	{
+		Player->Entity.ForceOn = Player->Entity.ForceOn + Vector2Normalize(GameInput->LeftStick) * Player->Entity.MovementSpeed;
+	}
+	if (GameInput->R1.OnDown)
+	{
+		Player->ForceWhenSlow = Vector2Normalize(GameInput->LeftStick) * Player->Entity.MovementSpeed * 0.2f;
+	}
+
 	if (GameInput->LeftStick.X > 0.1f || GameInput->LeftStick.X < -0.1f ||
 	    GameInput->LeftStick.Y > 0.1f || GameInput->LeftStick.Y < -0.1f)
 	{
-		vector2 DirectionDifference = Vector2Normalize(GameInput->LeftStick) - Player->FacingDirection;
-		Player->FacingDirection = Player->FacingDirection + (DirectionDifference * 0.2f);
+		vector2 DirectionDifference = Vector2Normalize(GameInput->LeftStick) - Player->Entity.FacingDirection;
+		Player->Entity.FacingDirection = Player->Entity.FacingDirection + (DirectionDifference * 0.2f);
 	}
 
 	vector2 PlayerCamDifference = Player->Entity.Position - GameState->WorldCenter;
-	GameState->WorldCenter = GameState->WorldCenter + (PlayerCamDifference * 0.08f);
+	GameState->WorldCenter = GameState->WorldCenter + (PlayerCamDifference * 0.08f * GameState->TimeRate);
 	vector2 WorldCenter = GameState->WorldCenter - GameState->CamCenter;
 
 	for (uint32 PosCount = 0;
@@ -530,21 +667,37 @@ extern "C" GAME_LOOP(GameLoop)
 
 	if (Player->IsGrappled)
 	{
-		gl_texture Texture = {};
-		Texture.Image = &GameState->GrappleLineImage;
-		Texture.Center = ((Player->Entity.Position + Player->GrappledEntity->Position) / 2) - WorldCenter;
+		gl_line Line;
+		Line.Start = Player->Entity.Position - WorldCenter;
+		vector2 WorldPoint = (Player->GrappledEnemy->Entity.Position + Player->RelativeGrapplePoint) - WorldCenter;
+		real64 EntityRotation = FacingDirectionToRotationAngle(Player->GrappledEnemy->Entity.FacingDirection);
+		Line.End = Vector2RotatePoint(WorldPoint, Player->GrappledEnemy->Entity.Position - WorldCenter, EntityRotation);
+		Line.Color = COLOR_WHITE;
+		Line.Width = 40;
+		PushRenderLine(GameState, &Line);
 
-		real64 GrappleImageScale = Vector2Distance(Player->Entity.Position, Player->GrappledEntity->Position) * 0.7f;
-		Texture.Scale = vector2{GrappleImageScale, 100};
 
-		vector2 PlayerEnemyDirection = Vector2Normalize(Player->Entity.Position - Player->GrappledEntity->Position);
-		real64 Angle = Vector2AngleBetween(PlayerEnemyDirection, vector2{1, 0});
-		if (PlayerEnemyDirection.Y > 0)
+		Player->GrappledEnemy->CurrHealth -= 0.5f;
+		if (Player->GrappledEnemy->CurrHealth < 0)
 		{
-			Angle = Angle * -1;
+			KillEntity(&Player->GrappledEnemy->Entity);
+			Player->CanGrapple = true;
+			Player->IsGrappled = false;
 		}
-		Texture.RadiansAngle = Angle;
-		PushRenderTexture(GameState, &Texture);
+		else
+		{
+			real64 HealthRatio = Player->GrappledEnemy->CurrHealth / Player->GrappledEnemy->MaxHealth;
+			int32 BarWidth = (int32)(100 * HealthRatio);
+			vector2 EntityWorldCenter = Player->GrappledEnemy->Entity.Position - WorldCenter;
+			vector2 BarCenter = EntityWorldCenter - vector2{0, 25};
+
+			gl_texture Texture = {};
+			Texture.Image = &GameState->EnemyHealthBar;
+			Texture.Center = BarCenter;
+			Texture.Scale = vector2{BarWidth / 2, 30};
+			Texture.RadiansAngle = 0;
+			PushRenderTexture(GameState, &Texture);
+		}
 	}
 
 	if (Player->Entity.OnCollide)
@@ -555,7 +708,12 @@ extern "C" GAME_LOOP(GameLoop)
 		{
 			DebugLine("DEAD", GameState);
 		}
+
+		Player->RedHitFlash.A = 1.0f;
 	}
+
+	Player->RedHitFlash.A = Player->RedHitFlash.A * 0.93f;
+	PushRenderSquare(GameState, MakeSquare(vector2{WindowInfo->Width / 2, WindowInfo->Height / 2}, 200, Player->RedHitFlash));
 
 	for (int EntityIndex = 0;
 	     EntityIndex < GameState->WorldEntityCount;
@@ -595,6 +753,15 @@ extern "C" GAME_LOOP(GameLoop)
 				vector2 EntityWorldCenter = EntityAbout->Position - WorldCenter;
 				PushRenderSquare(GameState, MakeSquare(EntityWorldCenter, EntityAbout->ImageWidth, EntityAbout->Color));
 			}
+			else if (EntityAbout != &Player->Entity)
+			{
+				gl_texture Texture = {};
+				Texture.Image = EntityAbout->Image;
+				Texture.Center = EntityAbout->Position - WorldCenter;
+				Texture.Scale = vector2{EntityAbout->ImageWidth / 2, EntityAbout->ImageWidth / 2};
+				Texture.RadiansAngle = FacingDirectionToRotationAngle(EntityAbout->FacingDirection);
+				PushRenderTexture(GameState, &Texture);
+			}
 		}
 	}
 
@@ -605,7 +772,7 @@ extern "C" GAME_LOOP(GameLoop)
 		active_entity *EntityAbout = GameState->WorldEntities[EntityIndex];
 		if (EntityAbout->Alive)
 		{
-			vector2 Acceleration = (EntityAbout->ForceOn / EntityAbout->Weight) + (-0.25f * EntityAbout->Velocity);
+			vector2 Acceleration = (((EntityAbout->ForceOn * GameState->TimeRate) / EntityAbout->Weight) + (-0.25f * EntityAbout->Velocity));
 			// NOTE these 0.9f here should actually be the previous elapsed frame time. Maybe do that at some point
 			vector2 NewTestPos = (0.5f * Acceleration * SquareInt((int64)(0.9f))) + (EntityAbout->Velocity * 0.9f) + EntityAbout->Position;
 
@@ -702,23 +869,28 @@ extern "C" GAME_LOOP(GameLoop)
 		}
 	}
 
-	gl_texture RadiusTexture = {};
-	RadiusTexture.Image = &GameState->GrappleRadiusImage;
-	RadiusTexture.Center = Player->Entity.Position - WorldCenter;
-	RadiusTexture.Scale = vector2{100, 100};
-	RadiusTexture.RadiansAngle = 0;
-	PushRenderTexture(GameState, &RadiusTexture);
+	if (GameInput->R1.IsDown && Player->CanGrapple)
+	{
+		gl_texture Texture = {};
+		Texture.Image = &GameState->GrappleArrowImage;
+		Texture.Center = Player->Entity.Position - WorldCenter;
+		Texture.Scale = vector2{100, 100};
+		Texture.RadiansAngle = FacingDirectionToRotationAngle(Player->Entity.FacingDirection);
+		PushRenderTexture(GameState, &Texture);
+	}
+
+	// gl_texture RadiusTexture = {};
+	// RadiusTexture.Image = &GameState->GrappleRadiusImage;
+	// RadiusTexture.Center = Player->Entity.Position - WorldCenter;
+	// RadiusTexture.Scale = vector2{100, 100};
+	// RadiusTexture.RadiansAngle = 0;
+	// PushRenderTexture(GameState, &RadiusTexture);
 
 	gl_texture PlayerTexture = {};
 	PlayerTexture.Image = Player->Entity.Image;
 	PlayerTexture.Center = Player->Entity.Position - WorldCenter;
 	PlayerTexture.Scale = vector2{Player->Entity.ImageWidth / 2, Player->Entity.ImageWidth / 2};
-	real64 Angle = Vector2AngleBetween(Player->FacingDirection, vector2{1, 0});
-	if (Player->FacingDirection.Y > 0)
-	{
-		Angle = Angle * -1;
-	}
-	PlayerTexture.RadiansAngle = Angle;
+	PlayerTexture.RadiansAngle = FacingDirectionToRotationAngle(Player->Entity.FacingDirection);
 	PushRenderTexture(GameState, &PlayerTexture);
 
 	// Visualize the players collision box

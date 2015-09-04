@@ -112,5 +112,30 @@ Sin(real64 Input)
 	return (sin(Input));
 }
 
+real64
+Max(real64 A, real64 B)
+{
+	if (A > B)
+	{
+		return (A);
+	}
+	else
+	{
+		return (B);
+	}
+}
+
+real64 
+Min(real64 A, real64 B)
+{
+	if (A < B)
+	{
+		return (A);
+	}
+	else
+	{
+		return (B);
+	}
+}
 
 const real64 PI = 3.14159f;

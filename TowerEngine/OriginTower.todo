@@ -3,7 +3,7 @@ Working on:
    ☐ visualize enemies health with a bar on screen
    ☐ destory enemies when they die
    ☐ generate four walls
-   ☐ flash the screen red when hit an enemy
+   ✔ flash the screen red when hit an enemy @done (15-09-03 21:53)
 
 
 General:
@@ -12,7 +12,7 @@ General:
    ☐ Combine the RenderSquares and RenderImges list. So those can be drawn and layered together
    ☐ switch player health over to images
    ☐ create an animated sprite
-   ☐ animate the latching sprite
+   ☐ animate the grappleing sprite
    ☐ grapple the nearest enemy
 
 
@@ -23,7 +23,6 @@ Later:
    ☐ look at using intrinsics for some of the math functions
    ☐ extend audio to support stereo
    ☐ handle resizing the window
-   ☐ Change color to use floats (0.0 - 1.0) instead of (0 - 255)
    ☐ create a way to visualize all the collider boxes for every entity
    ☐ threading.... what.
    ☐ use threading to stream assets
@@ -38,7 +37,7 @@ UI:
 
 
 Bugs:
-   ☐ player rotation seems to snap to a few values. moving the player in a circle isn't smooth
+   ☐ player rotation / controller input seems to snap to a few values. moving the player in a circle isn't smooth
 
   
 
@@ -50,6 +49,7 @@ Bugs:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+ ✔ Change color to use floats (0.0 - 1.0) instead of (0 - 255) @done (15-08-30 17:15) @project(Later)
  ✔ test things with two enemies @done (15-08-30 15:47) @project(Working on)
  ✔ grapple onto an the test enemy @done (15-08-30 15:16) @project(Working on)
  ✔ when pushing a square or texture, I'm creating a lot of temporary data. Maybe keep that data around but edit it when pushing @done (15-08-30 14:24) @project(Later)

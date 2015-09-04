@@ -469,14 +469,6 @@ CheckSaveState(char *FilePath, input_button *ButtonChecking, bool32 SelectIsDown
 	}
 }
 
-vector2
-RotatePoint(vector2 OriginalPoint, vector2 Center, real64 Angle)
-{
-	vector2 Result = {};
-	Result.X = Center.X + ((OriginalPoint.X - Center.X) * cos(Angle)) + ((OriginalPoint.Y - Center.Y) * sin(Angle));
-	Result.Y = Center.Y - ((OriginalPoint.X - Center.X) * sin(Angle)) + ((OriginalPoint.Y - Center.Y) * cos(Angle));
-	return (Result);
-}
 
 int32 main (int32 argc, char **argv)
 {
@@ -725,22 +717,22 @@ int32 main (int32 argc, char **argv)
 				vector2 OrigPoint = {};
 
 				OrigPoint = {Center.X - Scale.X, Center.Y - Scale.Y};
-				RotatedPoint = RotatePoint(OrigPoint, Center, Radians);
+				RotatedPoint = Vector2RotatePoint(OrigPoint, Center, Radians);
 				glTexCoord2f(0, 1);
 				glVertex2f((GLfloat)RotatedPoint.X, (GLfloat)RotatedPoint.Y);
 
 				OrigPoint = {Center.X + Scale.X, Center.Y - Scale.Y};
-				RotatedPoint = RotatePoint(OrigPoint, Center, Radians);
+				RotatedPoint = Vector2RotatePoint(OrigPoint, Center, Radians);
 				glTexCoord2f(1, 1);
 				glVertex2f((GLfloat)RotatedPoint.X, (GLfloat)RotatedPoint.Y);
 
 				OrigPoint = {Center.X + Scale.X, Center.Y + Scale.Y};
-				RotatedPoint = RotatePoint(OrigPoint, Center, Radians);
+				RotatedPoint = Vector2RotatePoint(OrigPoint, Center, Radians);
 				glTexCoord2f(1, 0);
 				glVertex2f((GLfloat)RotatedPoint.X, (GLfloat)RotatedPoint.Y);
 
 				OrigPoint = {Center.X - Scale.X, Center.Y + Scale.Y};
-				RotatedPoint = RotatePoint(OrigPoint, Center, Radians);
+				RotatedPoint = Vector2RotatePoint(OrigPoint, Center, Radians);
 				glTexCoord2f(0, 0);
 				glVertex2f((GLfloat)RotatedPoint.X, (GLfloat)RotatedPoint.Y);
 			}
@@ -757,7 +749,7 @@ int32 main (int32 argc, char **argv)
 			glBegin(GL_QUADS);
 			{
 				gl_square Square = GameStateFromMemory->RenderSquares[SquareIndex];
-				glColor3f((GLfloat)(Square.Color.R / 255.0f), (GLfloat)(Square.Color.G / 255.0f), (GLfloat)(Square.Color.B / 255.0f));
+				glColor4f((GLfloat)Square.Color.R, (GLfloat)Square.Color.G, (GLfloat)Square.Color.B, (GLfloat)Square.Color.A);
 				// NOTE the order of this can't be changed. Though I can't find any documentation on why or what the correct order is, but this works.
 				glVertex2d(Square.TopRight.X, Square.TopRight.Y);
 				glVertex2d(Square.TopLeft.X, Square.TopLeft.Y);
@@ -766,6 +758,21 @@ int32 main (int32 argc, char **argv)
 			}
 			glEnd();
 		}
+
+		for (uint32 LineIndex = 0;
+		     LineIndex < GameStateFromMemory->RenderLinesCount;
+		     LineIndex++)
+		{
+			gl_line Line = GameStateFromMemory->RenderLines[LineIndex];
+			glColor4f((GLfloat)Line.Color.R, (GLfloat)Line.Color.G, (GLfloat)Line.Color.B, (GLfloat)Line.Color.A);
+			glBegin(GL_LINES);
+			{
+				glVertex2d(Line.Start.X, Line.Start.Y);
+				glVertex2d(Line.End.X, Line.End.Y);
+			}
+			glEnd();
+		}
+
 
 		glfwSwapBuffers(OpenGLWindow);
 

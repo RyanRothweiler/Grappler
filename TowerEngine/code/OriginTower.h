@@ -209,6 +209,14 @@ struct gl_texture
 	real64 RadiansAngle;
 };
 
+struct gl_line
+{
+	vector2 Start;
+	vector2 End;
+	real32 Width;
+	color Color;
+};
+
 struct active_entity
 {
 	vector2 ForceOn;
@@ -226,10 +234,10 @@ struct active_entity
 	active_entity *CollidingWith;
 	vector2 CollideDirection;
 
-	bool32 Dynamic;
-
 	uint16 ImageWidth;
 	loaded_image *Image;
+
+	vector2 FacingDirection;
 
 	bool32 Alive;
 };
@@ -248,14 +256,19 @@ struct player
 {
 	active_entity Entity;
 
-	vector2 FacingDirection;
 	int64 CurrHealth;
+
+	vector2 ForceWhenSlow;
 
 	real32 CurrMovementSpeed;
 	real32 MaxMovementSpeed;
 
+	bool32 CanGrapple;
 	bool32 IsGrappled;
-	active_entity *GrappledEntity;
+	enemy *GrappledEnemy;
+	vector2 RelativeGrapplePoint;
+
+	color RedHitFlash;
 };
 
 struct game_state
@@ -281,16 +294,23 @@ struct game_state
 	gl_texture RenderTextures[300];
 	uint32 RenderSquaresCount;
 	gl_square RenderSquares[50];
+	uint32 RenderLinesCount;
+	gl_line RenderLines[50];
 
 	loaded_image BackgroundImage;
 	loaded_image GrappleRadiusImage;
+	loaded_image GrappleArrowImage;
 	loaded_image GrappleLineImage;
 	loaded_image PlayerImage;
+	loaded_image EnemyImage;
+	loaded_image EnemyHealthBar;
 
 	vector2 WorldCenter;
 	vector2 CamCenter;
 
 	int64 RandomGenState;
+
+	real64 TimeRate;
 
 	bool PrintFPS;
 	char *DebugOutput = "";
