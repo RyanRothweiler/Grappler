@@ -1,9 +1,9 @@
 Working on:
    ☐ give enemies health
+   ☐ shoot out the grappler and only grapple if it connects
    ☐ visualize enemies health with a bar on screen
    ☐ destory enemies when they die
-   ☐ generate four walls
-   ✔ flash the screen red when hit an enemy @done (15-09-03 21:53)
+   ☐ generate four walls 
 
 
 General:
@@ -49,6 +49,7 @@ Bugs:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+ ✔ flash the screen red when hit an enemy @done (15-09-03 21:53)  @project(Working on)
  ✔ Change color to use floats (0.0 - 1.0) instead of (0 - 255) @done (15-08-30 17:15) @project(Later)
  ✔ test things with two enemies @done (15-08-30 15:47) @project(Working on)
  ✔ grapple onto an the test enemy @done (15-08-30 15:16) @project(Working on)

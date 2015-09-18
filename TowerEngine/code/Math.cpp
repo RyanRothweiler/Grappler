@@ -125,7 +125,7 @@ Max(real64 A, real64 B)
 	}
 }
 
-real64 
+real64
 Min(real64 A, real64 B)
 {
 	if (A < B)
