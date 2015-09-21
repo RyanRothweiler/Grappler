@@ -510,17 +510,18 @@ int32 main (int32 argc, char **argv)
 	game_input GameInput = {};
 
 
-	#if INTERNAL
-	LPVOID BaseAddress = (LPVOID)Terrabytes((uint64)2);
-	#else
-	LPVOID BaseAddress = 0;
-	#endif
+	// #if INTERNAL
+	// LPVOID BaseAddress = (LPVOID)Megabytes((uint64)2);
+	// #else
+	// LPVOID BaseAddress = 0;
+	// #endif
 	game_memory GameMemory = {};
 	GameMemory.PermanentStorageSize = Megabytes(64);
 	GameMemory.TransientStorageSize = Megabytes((uint64)1);
 	GameMemory.TotalSize = GameMemory.PermanentStorageSize + GameMemory.TransientStorageSize;
 
-	GameMemory.GameMemoryBlock = VirtualAlloc(BaseAddress, GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	GameMemory.GameMemoryBlock = VirtualAlloc(NULL, (SIZE_T)GameMemory.TotalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	DWORD error = GetLastError();
 	GameMemory.PermanentStorage = GameMemory.GameMemoryBlock;
 	GameMemory.TransientStorage = (uint8 *)GameMemory.PermanentStorage + GameMemory.PermanentStorageSize;
 	GameMemory.PlatformReadFile = PlatformReadFile;

@@ -394,6 +394,7 @@ extern "C" GAME_LOOP(GameLoop)
 
 	Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
+	Assert(GameState);
 	if (!Memory->IsInitialized)
 	{
 		GameState->PrintFPS = true;
@@ -418,8 +419,8 @@ extern "C" GAME_LOOP(GameLoop)
 			     BackgroundY < YCount / 2;
 			     BackgroundY++)
 			{
-				GameState->BackgroundPositions[PosCount] = vector2{BackgroundX * GameState->BackgroundImage.Width,
-				                                                   BackgroundY * GameState->BackgroundImage.Height};
+				GameState->BackgroundPositions[PosCount] = vector2{(real64)(BackgroundX * GameState->BackgroundImage.Width),
+				                                                   (real64)(BackgroundY * GameState->BackgroundImage.Height)};
 				PosCount++;
 			}
 		}
@@ -476,7 +477,7 @@ extern "C" GAME_LOOP(GameLoop)
 		EnemyGetRandomTarget(Enemy, GameState);
 
 		GameState->WorldCenter = vector2{0, 0};
-		GameState->CamCenter = vector2{WindowInfo->Width / 2, WindowInfo->Height / 2};
+		GameState->CamCenter = vector2{(real64)(WindowInfo->Width / 2), (real64)(WindowInfo->Height / 2)};
 
 		AudioBuffer->RunningSampleIndex = 0;
 
@@ -694,7 +695,7 @@ extern "C" GAME_LOOP(GameLoop)
 			gl_texture Texture = {};
 			Texture.Image = &GameState->EnemyHealthBar;
 			Texture.Center = BarCenter;
-			Texture.Scale = vector2{BarWidth / 2, 30};
+			Texture.Scale = vector2{(real64)(BarWidth / 2), 30.0f};
 			Texture.RadiansAngle = 0;
 			PushRenderTexture(GameState, &Texture);
 		}
@@ -713,7 +714,8 @@ extern "C" GAME_LOOP(GameLoop)
 	}
 
 	Player->RedHitFlash.A = Player->RedHitFlash.A * 0.93f;
-	PushRenderSquare(GameState, MakeSquare(vector2{WindowInfo->Width / 2, WindowInfo->Height / 2}, 200, Player->RedHitFlash));
+	PushRenderSquare(GameState, MakeSquare(vector2{(real64)(WindowInfo->Width / 2),
+	                                       (real64)(WindowInfo->Height / 2)}, 200, Player->RedHitFlash));
 
 	for (int EntityIndex = 0;
 	     EntityIndex < GameState->WorldEntityCount;
@@ -758,7 +760,7 @@ extern "C" GAME_LOOP(GameLoop)
 				gl_texture Texture = {};
 				Texture.Image = EntityAbout->Image;
 				Texture.Center = EntityAbout->Position - WorldCenter;
-				Texture.Scale = vector2{EntityAbout->ImageWidth / 2, EntityAbout->ImageWidth / 2};
+				Texture.Scale = vector2{(real64)(EntityAbout->ImageWidth / 2), (real64)(EntityAbout->ImageWidth / 2)};
 				Texture.RadiansAngle = FacingDirectionToRotationAngle(EntityAbout->FacingDirection);
 				PushRenderTexture(GameState, &Texture);
 			}
@@ -779,22 +781,22 @@ extern "C" GAME_LOOP(GameLoop)
 			bool32 CollisionDetected = false;
 			active_entity *EntityHit = {};
 
-			for (int EntityIndex = 0;
-			     EntityIndex < GameState->WorldEntityCount;
-			     EntityIndex++)
+			for (int EntityCheckingCollision = 0;
+			     EntityCheckingCollision < GameState->WorldEntityCount;
+			     EntityCheckingCollision++)
 			{
-				if (GameState->WorldEntities[EntityIndex] != EntityAbout)
+				if (GameState->WorldEntities[EntityCheckingCollision] != EntityAbout)
 				{
 					real64 WidthAdding = EntityAbout->ColliderWidth;
 					vector2 EntityTopLeft =
 					{
-						GameState->WorldEntities[EntityIndex]->Position.X - ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2),
-						GameState->WorldEntities[EntityIndex]->Position.Y - ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2)
+						GameState->WorldEntities[EntityCheckingCollision]->Position.X - ((GameState->WorldEntities[EntityCheckingCollision]->ColliderWidth + WidthAdding) / 2),
+						GameState->WorldEntities[EntityCheckingCollision]->Position.Y - ((GameState->WorldEntities[EntityCheckingCollision]->ColliderWidth + WidthAdding) / 2)
 					};
 					vector2 EntityBottomRight =
 					{
-						GameState->WorldEntities[EntityIndex]->Position.X + ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2),
-						GameState->WorldEntities[EntityIndex]->Position.Y + ((GameState->WorldEntities[EntityIndex]->ColliderWidth + WidthAdding) / 2)
+						GameState->WorldEntities[EntityCheckingCollision]->Position.X + ((GameState->WorldEntities[EntityCheckingCollision]->ColliderWidth + WidthAdding) / 2),
+						GameState->WorldEntities[EntityCheckingCollision]->Position.Y + ((GameState->WorldEntities[EntityCheckingCollision]->ColliderWidth + WidthAdding) / 2)
 					};
 
 					if (NewTestPos.X > EntityTopLeft.X &&
@@ -889,7 +891,7 @@ extern "C" GAME_LOOP(GameLoop)
 	gl_texture PlayerTexture = {};
 	PlayerTexture.Image = Player->Entity.Image;
 	PlayerTexture.Center = Player->Entity.Position - WorldCenter;
-	PlayerTexture.Scale = vector2{Player->Entity.ImageWidth / 2, Player->Entity.ImageWidth / 2};
+	PlayerTexture.Scale = vector2{(real64)(Player->Entity.ImageWidth / 2), (real64)(Player->Entity.ImageWidth / 2)};
 	PlayerTexture.RadiansAngle = FacingDirectionToRotationAngle(Player->Entity.FacingDirection);
 	PushRenderTexture(GameState, &PlayerTexture);
 
@@ -902,7 +904,7 @@ extern "C" GAME_LOOP(GameLoop)
 	     HealthIndex++)
 	{
 		uint8 Width = 30;
-		vector2 Center = vector2{HealthIndex * (25 + (Width / 2)), 25 + (Width / 2)};
+		vector2 Center = vector2{(real64)(HealthIndex * (25 + (Width / 2))), (real64)(25 + (Width / 2))};
 		PushRenderSquare(GameState, MakeSquare(Center, Width, COLOR_RED));
 	}
 }
